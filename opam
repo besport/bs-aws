@@ -24,13 +24,14 @@ build-test: [
   ["ocaml" "setup.ml" "-test"]
 ]
 depends: [
+  "base-threads"
   "base64"
   "cryptokit"
   "lwt"
   "oasis" {build & >= "0.4"}
   "ocamlbuild" {build}
   "ocamlfind" {build}
-  "ocsigenserver" {= "2.6"}
+  "ocsigenserver"
   "re"
   "yojson"
 ]
