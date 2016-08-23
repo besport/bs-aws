@@ -1,0 +1,37 @@
+opam-version: "1.2"
+name: "bs-aws"
+version: "0.1"
+maintainer: "Jan Rochel <jan@rochel.info>"
+authors: [ "Jerôme Vouillon"
+           "Jan Rochel" ]
+license: "LGPL with OCaml linking exception"
+homepage: "https://github.com/besport/bs-aws"
+dev-repo: "https://github.com/besport/bs-aws.git"
+bug-reports: "https://github.com/besport/bs-aws/issues"
+build: [
+  ["oasis" "setup"]
+  ["ocaml" "setup.ml" "-configure" "--prefix" prefix]
+  ["ocaml" "setup.ml" "-build"]
+]
+install: ["ocaml" "setup.ml" "-install"]
+remove: [
+  ["ocamlfind" "remove" "bs-aws"]
+]
+build-test: [
+  ["oasis" "setup"]
+  ["ocaml" "setup.ml" "-configure" "--enable-tests"]
+  ["ocaml" "setup.ml" "-build"]
+  ["ocaml" "setup.ml" "-test"]
+]
+depends: [
+  "base64"
+  "cryptokit"
+  "lwt"
+  "oasis" {build & >= "0.4"}
+  "ocamlbuild" {build}
+  "ocamlfind" {build}
+  "ocsigenserver" {= "2.6"}
+  "re"
+  "yojson"
+]
+available: [ ocaml-version >= "4.01" ]
