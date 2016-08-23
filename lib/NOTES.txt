@@ -1,0 +1,14 @@
+* Perform requests
+* AWS errors
+
+* 60s DNS cache (?)
+
+* Follow redirects
+* retry on failures, with exponential backoff
+  (possibility to disable for interactive usages)
+* Automatically retrieve credentials from instance role?
+  ==> getting credentials should be asynchronous
+* Request performance:
+  - DNS caching
+  - keepalive
+  - TLS session resumption

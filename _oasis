@@ -1,0 +1,23 @@
+OASISFormat:            0.4
+Name:                   bs-aws
+Version:                0.1
+Synopsis:               collection of functions around Amazon Web Services
+Description:            this is not nearly a complete implementation of the AWS API and is not actively developed
+Authors:                Jerôme Vouillon, Jan Rochel
+Maintainers:            Jan Rochel <jan@rochel.info>
+Homepage:               https://github.com/besport/bs-aws
+License:                LGPL with OCaml linking exception
+BuildTools:             ocamlbuild
+Plugins:                DevFiles (0.4), META (0.4)
+OCamlVersion:           >= 4.01
+
+Library "bs-aws"
+  Path:                 lib
+  BuildDepends:         re.str,cryptokit,yojson,base64,lwt,ocsigenserver
+  Modules:              Aws_base, Aws_common, Aws_elastic_transcoder, Aws_lambda, Aws_request, Aws_s3, Aws_signature
+  InternalModules:      Aws_common
+
+SourceRepository master
+  Type:       git
+  Location:   https://github.com/besport/bs-aws.git
+  Browser:    https://github.com/besport/bs-aws
