@@ -114,7 +114,7 @@ let list ~credentials ~region () =
 module Bucket = struct
   let list ~credentials ~region bucket =
     request ~credentials ~region ~meth:`GET
-    ~headers:[("list-type", "2")]
+    (*~headers:[("list-type", "2")]*) (*does not work with it*)
     ~uri:("/" ^ bucket)
     ()
 end
