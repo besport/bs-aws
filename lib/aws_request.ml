@@ -7,6 +7,7 @@ let translate_meth m =
   | `POST   -> POST
   | `PUT    -> PUT
   | `DELETE -> DELETE
+  | `HEAD -> HEAD
 
 let (>>=) = Lwt.bind
 
@@ -38,10 +39,10 @@ let perform ~credentials ~service ~region
     ?port:(if secure then Some 443 else None)
     ~content:(match meth with
                 `POST | `PUT    -> Some (Ocsigen_stream.of_string payload)
-              | `GET  | `DELETE -> None)
+              | `GET  | `DELETE | `HEAD -> None)
     ?content_length:(match meth with
                 `POST | `PUT    -> Some (String.length payload |> Int64.of_int)
-              | `GET  | `DELETE -> None)
+              | `GET  | `DELETE | `HEAD -> None)
     ~http_method:(translate_meth meth)
     ~host
     ~uri

@@ -24,7 +24,7 @@ let escape s =
     s;
   Buffer.contents b
 
-type meth = [`GET | `POST | `PUT | `DELETE]
+type meth = [`GET | `POST | `PUT | `DELETE | `HEAD]
 
 let string_of_meth m =
   match m with
@@ -32,6 +32,7 @@ let string_of_meth m =
   | `POST   -> "POST"
   | `PUT    -> "PUT"
   | `DELETE -> "DELETE"
+  | `HEAD   -> "HEAD"
 
 type request =
   { secure : bool;

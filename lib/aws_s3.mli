@@ -43,4 +43,16 @@ module Object : sig
     string ->
     string ->
     string Lwt.t
+  val get :
+    credentials:Aws_common.credentials ->
+    region:Aws_common.Region.t ->
+    bucket:string ->
+    string ->
+    string Lwt.t
+  val head :
+    credentials:Aws_common.credentials ->
+    region:Aws_common.Region.t ->
+    bucket:string ->
+    string ->
+    string Lwt.t
 end

@@ -129,4 +129,14 @@ module Object = struct
     request ~credentials ~region ~meth:`PUT
       ~host:(bucket_host region bucket)
       ~uri:("/" ^ object_name) ~payload:data ()
+
+  let head ~credentials ~region ~bucket key =
+    request ~credentials ~region ~meth:`HEAD
+    ~uri:("/" ^ bucket ^ "/" ^ key)
+    ()
+
+  let get ~credentials ~region ~bucket key =
+    request ~credentials ~region ~meth:`GET
+    ~uri:("/" ^ bucket ^ "/" ^ key)
+    ()
 end

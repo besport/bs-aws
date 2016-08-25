@@ -1,6 +1,6 @@
 (* Utility functions, used internally. *)
 
-type meth = [`GET | `POST | `PUT | `DELETE]
+type meth = [`GET | `POST | `PUT | `DELETE | `HEAD]
 
 val string_of_meth : meth -> string
 
