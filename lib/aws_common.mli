@@ -16,6 +16,7 @@ module Region : sig
     | `sa_east_1 ]
 
   val to_string : [< t] -> string
+  val from_string : string -> t
 end
 
 type error =
