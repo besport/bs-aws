@@ -15,7 +15,6 @@ Library "bs-aws"
   Path:                 lib
   BuildDepends:         re.str,cryptokit,yojson,base64,lwt,ocsigenserver,threads
   Modules:              Aws_base, Aws_common, Aws_elastic_transcoder, Aws_lambda, Aws_request, Aws_s3, Aws_signature
-  InternalModules:      Aws_common
 
 SourceRepository master
   Type:       git
