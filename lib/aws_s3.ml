@@ -130,6 +130,12 @@ module Object = struct
       ~host:(bucket_host region bucket)
       ~uri:("/" ^ object_name) ~payload:data ()
 
+  let copy ~credentials ~region ~src_bucket src_object ~dst_bucket dst_object  =
+    request ~credentials ~region ~meth:`PUT
+      ~host:(bucket_host region dst_bucket)
+      ~headers:[("x-amz-copy-source", "/" ^ src_bucket ^ "/" ^ src_object)]
+      ~uri:("/" ^ dst_object) ()
+
   let head ~credentials ~region ~bucket key =
     request ~credentials ~region ~meth:`HEAD
     ~uri:("/" ^ bucket ^ "/" ^ key)
