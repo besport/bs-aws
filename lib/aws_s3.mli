@@ -35,14 +35,14 @@ module Object : sig
     region:Aws_common.Region.t ->
     bucket:string ->
     string ->
-    string Lwt.t
+    unit Lwt.t
   val put :
     credentials:Aws_common.credentials ->
     region:Aws_common.Region.t ->
     bucket:string ->
     string ->
     string ->
-    string Lwt.t
+    unit Lwt.t
   val copy :
     credentials:Aws_common.credentials ->
     region:Aws_common.Region.t ->
@@ -50,7 +50,7 @@ module Object : sig
     string ->
     dst_bucket:string ->
     string ->
-    string Lwt.t
+    unit Lwt.t
   val get :
     credentials:Aws_common.credentials ->
     region:Aws_common.Region.t ->
