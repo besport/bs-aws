@@ -1,6 +1,6 @@
 opam-version: "1.2"
 name: "bs-aws"
-version: "0.2"
+version: "0.3"
 maintainer: "Jan Rochel <jan@rochel.info>"
 authors: [ "Jerôme Vouillon"
            "Jan Rochel" ]

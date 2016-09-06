@@ -10,11 +10,12 @@ type bucket = { region : Aws_common.Region.t; name : string }
 
 let bucket region name = { region; name }
 
-let bucket_url ?(secure=true) bucket =
+let bucket_url ?(secure=true) region bucket =
+  let region = Aws_common.Region.to_string region in
   if secure then
-    Format.sprintf "https://%s.s3.amazonaws.com/" bucket.name
+    Format.sprintf "https://%s.s3-%s.amazonaws.com/" bucket.name region
   else
-    Format.sprintf "http://%s.s3.amazonaws.com/" bucket.name
+    Format.sprintf "http://%s.s3-%s.amazonaws.com/" bucket.name region
 
 (****)
 
@@ -26,7 +27,7 @@ let condition field cond =
     `Eq value      -> exact_match field value
   | `Prefix prefix -> starts_with field prefix
 
-let form ?secure ~credentials ~bucket
+let form ?secure ~credentials ~region ~bucket
     ~expiration ~key
     ?content_length_range ?success_action_redirect ?success_action_status
     ?(other_fields = []) () =
@@ -95,7 +96,7 @@ let form ?secure ~credentials ~bucket
       None        -> fields
     | Some status -> ("success_action_status", status) :: fields
   in
-  (bucket_url ?secure bucket, fields)
+  (bucket_url ?secure region bucket, fields)
 
 let hash str = ("x-amz-content-sha256", Aws_signature.hash str)
 let hostname region =

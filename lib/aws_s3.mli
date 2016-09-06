@@ -4,7 +4,8 @@ type bucket
 val bucket : Aws_common.Region.t -> string -> bucket
 
 val form :
-  ?secure:bool -> credentials:Aws_common.credentials -> bucket:bucket ->
+  ?secure:bool -> credentials:Aws_common.credentials ->
+  region:Aws_common.Region.t -> bucket:bucket ->
   expiration:[`Date of float | `Delay of float] ->
   key:[`Eq of string | `Prefix of string * string] ->
   ?content_length_range:int * int ->
