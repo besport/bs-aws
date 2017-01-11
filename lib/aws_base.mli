@@ -29,3 +29,24 @@ module Debug : sig
   val enable : string -> unit
   val all : unit -> bool
 end
+
+module Xml : sig
+  val element : (Xmlm.input -> 'a) -> Xmlm.input -> string * 'a
+  val repeat : (Xmlm.input -> 'a) -> Xmlm.input -> 'a list
+  val record : Xmlm.input -> (string * string) list
+end
+
+module Param : sig
+  val string :
+    string -> string option ->
+    (string * string) list -> (string * string) list
+  val int :
+    string -> int option ->
+    (string * string) list -> (string * string) list
+  val bool :
+    string -> bool option ->
+    (string * string) list -> (string * string) list
+  val custom :
+    string -> ('a -> string) -> 'a option ->
+    (string * string) list -> (string * string) list
+end

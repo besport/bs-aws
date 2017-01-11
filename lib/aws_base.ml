@@ -121,3 +121,62 @@ module Debug = struct
 
   let all = make "all" "Enable all debugging options." []
 end
+
+(****)
+
+module Xml = struct
+  let text i =
+    match Xmlm.peek i with
+    | `Data d -> ignore (Xmlm.input i); d
+    | `El_end -> ""
+    | _       -> assert false
+
+
+  let repeat f i =
+    let rec repeat_rec f i acc =
+      match Xmlm.peek i with
+        `El_end -> List.rev acc
+      | _       -> repeat_rec f i (f i :: acc)
+    in
+    repeat_rec f i []
+
+  let element_end i =
+    match Xmlm.input i with
+    | `El_end -> ()
+    | _       -> assert false
+
+  let element f i =
+    match Xmlm.input i with
+    | `El_start ((_, nm), _) ->
+      let x = f i in
+      element_end i;
+      (nm, x)
+    | _ ->
+      assert false
+
+  let field i = element text i
+
+  let record = repeat field
+end
+
+module Param = struct
+  let string k v rem =
+    match v with
+      Some v -> (k, v) :: rem
+    | _      -> rem
+
+  let int k v rem =
+    match v with
+      Some v -> (k, string_of_int v) :: rem
+    | _      -> rem
+
+  let bool k v rem =
+    match v with
+      Some true -> (k, "true") :: rem
+    | _         -> rem
+
+  let custom k f v rem =
+    match v with
+      Some v -> (k, f v) :: rem
+    | _      -> rem
+end

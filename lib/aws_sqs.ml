@@ -9,75 +9,24 @@ let decode_response res =
   ignore (Xmlm.input i); (* *Result *)
   i
 
-module Xml = struct
-
-  let text i =
-    match Xmlm.peek i with
-    | `Data d -> ignore (Xmlm.input i); d
-    | `El_end -> ""
-    | _       -> assert false
-
-
-  let repeat f i =
-    let rec repeat_rec f i acc =
-      match Xmlm.peek i with
-        `El_end -> List.rev acc
-      | _       -> repeat_rec f i (f i :: acc)
-    in
-    repeat_rec f i []
-
-  let element_end i =
-    match Xmlm.input i with
-    | `El_end -> ()
-    | _       -> assert false
-
-  let element f i =
-    match Xmlm.input i with
-    | `El_start ((_, nm), _) ->
-      let x = f i in
-      element_end i;
-      (nm, x)
-    | _ ->
-      assert false
-
-  let field i = element text i
-
-  let record = repeat field
-
-end
-
-let p_string k v rem =
-  match v with
-    Some v -> (k, v) :: rem
-  | _      -> rem
-
-let p_int k v rem =
-  match v with
-    Some v -> (k, string_of_int v) :: rem
-  | _      -> rem
-
-let p_bool k v rem =
-  match v with
-    Some true -> (k, "true") :: rem
-  | _         -> rem
-
 let create_queue ~credentials ~region
     ?delay_seconds ?maximum_message_size ?message_retention_period
     ?policy ?receive_message_wait_time_seconds ?redrive_policy
     ?visibility_timeout ?fifo_queue ?content_based_deduplication
     ~queue_name () =
   let parameters =
+    let open Aws_base.Param in
     ["Action", "CreateQueue";
      "QueueName", queue_name]
-    |> p_string "Policy" policy
-    |> p_int "VisibilityTimeout" visibility_timeout
-    |> p_int "MaximumMessageSize" maximum_message_size
-    |> p_int "MessageRetentionPeriod" message_retention_period
-    |> p_int "DelaySeconds" delay_seconds
-    |> p_int "ReceiveMessageWaitTimeSeconds" receive_message_wait_time_seconds
-    |> p_string "RedrivePolicy" redrive_policy
-    |> p_bool "FifoQueue" fifo_queue
-    |> p_string "ContentBasedDeduplication" content_based_deduplication
+    |> string "Policy" policy
+    |> int "VisibilityTimeout" visibility_timeout
+    |> int "MaximumMessageSize" maximum_message_size
+    |> int "MessageRetentionPeriod" message_retention_period
+    |> int "DelaySeconds" delay_seconds
+    |> int "ReceiveMessageWaitTimeSeconds" receive_message_wait_time_seconds
+    |> string "RedrivePolicy" redrive_policy
+    |> bool "FifoQueue" fifo_queue
+    |> string "ContentBasedDeduplication" content_based_deduplication
   in
   let%lwt res =
     Aws_request.perform
@@ -125,11 +74,12 @@ let receive_message ~credentials ~region
     ?max_number_of_messages ?visibility_timeout ?wait_time_seconds
     ~queue_url () =
   let parameters =
+    let open Aws_base.Param in
     ["Action", "ReceiveMessage";
      "QueueUrl", queue_url]
-    |> p_int "MaxNumberOfMessages" max_number_of_messages
-    |> p_int "VisibilityTimeout" visibility_timeout
-    |> p_int "WaitTimeSeconds" wait_time_seconds
+    |> int "MaxNumberOfMessages" max_number_of_messages
+    |> int "VisibilityTimeout" visibility_timeout
+    |> int "WaitTimeSeconds" wait_time_seconds
   in
   let%lwt res =
     Aws_request.perform
@@ -137,7 +87,7 @@ let receive_message ~credentials ~region
       ~uri:"/" ~query:parameters ()
   in
   Lwt.return
-    (res |> decode_response |> Xml.(repeat (element record))
+    (res |> decode_response |> Aws_base.Xml.(repeat (element record))
      |> List.map
           (fun (_, r) ->
              { message_id = List.assoc "MessageId" r;
