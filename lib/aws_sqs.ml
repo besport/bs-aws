@@ -9,6 +9,8 @@ let decode_response res =
   ignore (Xmlm.input i); (* *Result *)
   i
 
+let init_params act k v = ["Version", "2012-11-05"; "Action", act; k, v]
+
 let create_queue ~credentials ~region
     ?delay_seconds ?maximum_message_size ?message_retention_period
     ?policy ?receive_message_wait_time_seconds ?redrive_policy
@@ -16,8 +18,7 @@ let create_queue ~credentials ~region
     ~queue_name () =
   let parameters =
     let open Aws_base.Param in
-    ["Action", "CreateQueue";
-     "QueueName", queue_name]
+    init_params "CreateQueue" "QueueName" queue_name
     |> string "Policy" policy
     |> int "VisibilityTimeout" visibility_timeout
     |> int "MaximumMessageSize" maximum_message_size
@@ -40,10 +41,7 @@ let create_queue ~credentials ~region
   | _       -> assert false
 
 let delete_queue ~credentials ~region ~queue_url () =
-  let parameters =
-    ["Action", "DeleteQueue";
-     "QueueUrl", queue_url]
-  in
+  let parameters = init_params "DeleteQueue" "QueueUrl" queue_url in
   let%lwt _ =
     Aws_request.perform
       ~credentials ~service:"sqs" ~region ~meth:`GET ~host:(endpoint region)
@@ -53,9 +51,8 @@ let delete_queue ~credentials ~region ~queue_url () =
 
 let send_message ~credentials ~region ~queue_url ~message_body () =
   let parameters =
-    ["Action", "SendMessage";
-     "QueueUrl", queue_url;
-     "MessageBody", message_body]
+    ("MessageBody", message_body) ::
+    init_params "SendMessage" "QueueUrl" queue_url
   in
   let%lwt _ =
     Aws_request.perform
@@ -75,8 +72,7 @@ let receive_message ~credentials ~region
     ~queue_url () =
   let parameters =
     let open Aws_base.Param in
-    ["Action", "ReceiveMessage";
-     "QueueUrl", queue_url]
+    init_params "ReceiveMessage" "QueueUrl" queue_url
     |> int "MaxNumberOfMessages" max_number_of_messages
     |> int "VisibilityTimeout" visibility_timeout
     |> int "WaitTimeSeconds" wait_time_seconds
@@ -96,9 +92,8 @@ let receive_message ~credentials ~region
 
 let delete_message ~credentials ~region ~queue_url ~receipt_handle () =
   let parameters =
-    ["Action", "DeleteMessage";
-     "QueueUrl", queue_url;
-     "ReceiptHandle", receipt_handle]
+    ("ReceiptHandle", receipt_handle) ::
+    init_params "DeleteMessage" "QueueUrl" queue_url
   in
   let%lwt _ =
     Aws_request.perform

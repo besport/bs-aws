@@ -2,18 +2,19 @@
 let endpoint region =
   Printf.sprintf "sns.%s.amazonaws.com" (Aws_common.Region.to_string region)
 
+let init_params act k v = ["Version", "2010-03-31"; "Action", act; k, v]
+
 let publish ~credentials ~region ~topic ~message () =
-  let topic =
-    match topic with
-    | `Target_arn t -> ("TargetArn", t)
-    | `Topic_arn t -> ("TopicArn", t)
-    | `Phone_number p -> ("PhoneNumber", p)
+  let query =
+    (match topic with
+     | `Target_arn t -> ("TargetArn", t)
+     | `Topic_arn t -> ("TopicArn", t)
+     | `Phone_number p -> ("PhoneNumber", p)) ::
+    init_params "Publish" "Message" message
   in
   let%lwt _ =
-    Aws_request.perform ~credentials ~service:"sns" ~region
-      ~meth:`POST ~host:(endpoint region) ~uri:"/"
-      ~query:[("Action", "Publish"); topic; ("Message", message)] ()
-  in
+    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+      ~host:(endpoint region) ~uri:"/" ~query () in
   Lwt.return ()
   (*TODO: parse XML response*)
 
