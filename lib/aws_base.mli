@@ -23,6 +23,7 @@ val print_curl_request : request -> unit
 val to_ISO8601 : ?extended:bool -> float -> string
 
 val url_encode : string -> string
+val encode_form_string : string -> string
 
 module Debug : sig
   val make : string -> string -> string list -> (unit -> bool)

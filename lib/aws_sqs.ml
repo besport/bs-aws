@@ -31,7 +31,7 @@ let create_queue ~credentials ~region
   in
   let%lwt res =
     Aws_request.perform
-      ~credentials ~service:"sqs" ~region ~meth:`GET ~host:(endpoint region)
+      ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
   let i = decode_response res in
@@ -44,7 +44,7 @@ let delete_queue ~credentials ~region ~queue_url () =
   let parameters = init_params "DeleteQueue" "QueueUrl" queue_url in
   let%lwt _ =
     Aws_request.perform
-      ~credentials ~service:"sqs" ~region ~meth:`GET ~host:(endpoint region)
+      ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
   Lwt.return ()
@@ -56,7 +56,7 @@ let send_message ~credentials ~region ~queue_url ~message_body () =
   in
   let%lwt _ =
     Aws_request.perform
-      ~credentials ~service:"sqs" ~region ~meth:`GET ~host:(endpoint region)
+      ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
   Lwt.return ()
@@ -79,7 +79,7 @@ let receive_message ~credentials ~region
   in
   let%lwt res =
     Aws_request.perform
-      ~credentials ~service:"sqs" ~region ~meth:`GET ~host:(endpoint region)
+      ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
   Lwt.return
@@ -97,7 +97,7 @@ let delete_message ~credentials ~region ~queue_url ~receipt_handle () =
   in
   let%lwt _ =
     Aws_request.perform
-      ~credentials ~service:"sqs" ~region ~meth:`GET ~host:(endpoint region)
+      ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
   Lwt.return ()

@@ -1,15 +1,37 @@
 (* Utility functions, used internally. *)
 
 let url_encode s =
-  let b = Buffer.create 128 in
-  String.iter
-    (fun c ->
-       match c with
-         'A'..'Z' | 'a'..'z' | '0'..'9' | '-' | '_' | '.' | '~' ->
-           Buffer.add_char b c
-       | _ ->
-           Buffer.add_string b (Printf.sprintf "%%%02X" (Char.code c)))
-    s;
+  let l = String.length s in
+  let b = Buffer.create l in
+  for i = 0 to l - 1 do
+    let c = s.[i] in
+    match c with
+    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '-' | '_' | '.' | '~' ->
+        Buffer.add_char b c
+    | _ ->
+        let hex = "0123456789ABCDEF" in
+        Buffer.add_char b '%';
+        Buffer.add_char b hex.[Char.code c lsr 4];
+        Buffer.add_char b hex.[Char.code c land 0xf]
+  done;
+  Buffer.contents b
+
+let encode_form_string s =
+  let l = String.length s in
+  let b = Buffer.create l in
+  for i = 0 to l - 1 do
+    let c = s.[i] in
+    match c with
+    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '-' | '_' | '.' | '*' ->
+        Buffer.add_char b c
+    | ' ' ->
+        Buffer.add_char b '+'
+    | _ ->
+        let hex = "0123456789ABCDEF" in
+        Buffer.add_char b '%';
+        Buffer.add_char b hex.[Char.code c lsr 4];
+        Buffer.add_char b hex.[Char.code c land 0xf]
+  done;
   Buffer.contents b
 
 let escape s =

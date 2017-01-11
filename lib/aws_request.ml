@@ -11,11 +11,33 @@ let translate_meth m =
 
 let (>>=) = Lwt.bind
 
+let encode_post_query req =
+  match req with
+  | {Aws_base.meth = `POST;
+     query = (_ :: _) as query; payload = ""; headers} ->
+      {req with
+       Aws_base.headers =
+         ("content-type", "application/x-www-form-urlencoded") :: headers;
+       query = [];
+       payload =
+         String.concat "&"
+           (List.map
+              (fun (f, v) ->
+                 Format.sprintf "%s=%s"
+                   (Aws_base.encode_form_string f)
+                   (Aws_base.encode_form_string v))
+              query)}
+  | {Aws_base.meth = `POST; query = _ :: _} ->
+      assert false
+  | _ ->
+      req
+
 let perform ~credentials ~service ~region
       ?secure ~meth ~host ~uri ?query ?headers ?payload () =
   let {Aws_base.secure; meth; uri; query; headers; payload } as req =
-    Aws_signature.sign_request credentials ~service region
-      (Aws_base.request ?secure ~meth ~host ~uri ?query ?headers ?payload ())
+    Aws_base.request ?secure ~meth ~host ~uri ?query ?headers ?payload ()
+    |> encode_post_query
+    |> Aws_signature.sign_request credentials ~service region
   in
   if debug () then Aws_base.print_curl_request req;
   let uri =
