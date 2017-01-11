@@ -64,7 +64,7 @@ let print_curl_request {secure; meth; uri; query; headers; payload} =
     headers;
   begin match meth with
     `GET  -> ()
-  | `POST -> Format.eprintf " --data-binary $'%s'" (escape payload)
+  | `POST -> Format.eprintf " --data-binary '%s'" (escape payload)
   | m -> Format.eprintf " -X %s" (string_of_meth m)
   end;
   Format.eprintf "@."
