@@ -2,8 +2,6 @@
 XXX Non-ascii characters in JSON policy should be escaped...
 *)
 
-let (>>) f g = Lwt.bind f (fun _ -> g)
-
 let debug = Aws_base.Debug.make "s3" "Debug S3 API." ["all"]
 
 type bucket = { region : Aws_common.Region.t; name : string }
@@ -123,27 +121,29 @@ module Bucket = struct
 end
 
 module Object = struct
-  let delete ~credentials ~region ~bucket object_name = Lwt.catch
-    (fun () -> request ~credentials ~region ~meth:`DELETE
-                 ~host:(bucket_host region bucket)
-                 ~uri:("/" ^ object_name) () >>
-               Lwt.return ())
-    (fun e -> match e with
-       | Aws_common.Error e when e.Aws_common.code = 204 -> Lwt.return ()
-       | e -> Lwt.fail e
-    )
+  let delete ~credentials ~region ~bucket object_name =
+    let%lwt _ =
+      request ~credentials ~region ~meth:`DELETE
+        ~host:(bucket_host region bucket)
+        ~uri:("/" ^ object_name) ()
+    in
+    Lwt.return ()
 
   let put ~credentials ~region ~bucket object_name data =
-    request ~credentials ~region ~meth:`PUT
-      ~host:(bucket_host region bucket)
-      ~uri:("/" ^ object_name) ~payload:data () >>
+    let%lwt _ =
+        request ~credentials ~region ~meth:`PUT
+          ~host:(bucket_host region bucket)
+          ~uri:("/" ^ object_name) ~payload:data ()
+    in
     Lwt.return ()
 
   let copy ~credentials ~region ~src_bucket src_object ~dst_bucket dst_object  =
-    request ~credentials ~region ~meth:`PUT
-      ~host:(bucket_host region dst_bucket)
-      ~headers:[("x-amz-copy-source", "/" ^ src_bucket ^ "/" ^ src_object)]
-      ~uri:("/" ^ dst_object) () >>
+    let%lwt _ =
+      request ~credentials ~region ~meth:`PUT
+        ~host:(bucket_host region dst_bucket)
+        ~headers:[("x-amz-copy-source", "/" ^ src_bucket ^ "/" ^ src_object)]
+        ~uri:("/" ^ dst_object) ()
+    in
     Lwt.return ()
 
   let head ~credentials ~region ~bucket key =

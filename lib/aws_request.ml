@@ -79,7 +79,7 @@ let perform ~credentials ~service ~region
     Format.eprintf "%s@." content
   end;
   match code with
-    200 | 201 ->
+    200 | 201 | 204 ->
       Lwt.return content
   | _ ->
       let error =

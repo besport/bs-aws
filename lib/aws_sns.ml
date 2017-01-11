@@ -1,7 +1,5 @@
 module Make(Settings : Aws_common.SETTINGS) = struct
 
-  let (>>) f g = Lwt.bind f (fun _ -> g)
-
   let debug = Aws_base.Debug.make "sns" "Debug SNS API." ["all"]
 
 
@@ -20,7 +18,10 @@ module Make(Settings : Aws_common.SETTINGS) = struct
     | `TopicArn t -> ("TopicArn", t)
     | `PhoneNumber p -> ("PhoneNumber", p)
     in
-    request ~meth:`POST [("Action", "Publish"); target; ("Message", message)] >>
+    let%lwt _ =
+      request ~meth:`POST
+        [("Action", "Publish"); target; ("Message", message)]
+    in
     Lwt.return ()
     (*TODO: parse XML response*)
 end
