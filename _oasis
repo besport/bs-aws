@@ -17,7 +17,7 @@ Library "bs-aws"
   BuildDepends:         lwt.ppx,yojson,xmlm,base64,ocsigenserver,threads
   InternalModules:      Aws_base, Aws_request, Aws_signature
   Modules:              Aws_common, Aws_elastic_transcoder, Aws_lambda,
-                        Aws_s3, Aws_sns, Aws_sqs
+                        Aws_s3, Aws_sns, Aws_sqs, Aws_ses
 
 SourceRepository master
   Type:       git
