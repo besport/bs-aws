@@ -15,7 +15,9 @@ Library "bs-aws"
   Path:                 lib
   XMETARequires:        lwt,yojson,xmlm,base64,ocsigenserver
   BuildDepends:         lwt.ppx,yojson,xmlm,base64,ocsigenserver,threads
-  Modules:              Aws_base, Aws_common, Aws_elastic_transcoder, Aws_lambda, Aws_request, Aws_s3, Aws_signature, Aws_sns, Aws_sqs
+  InternalModules:      Aws_base, Aws_request, Aws_signature
+  Modules:              Aws_common, Aws_elastic_transcoder, Aws_lambda,
+                        Aws_s3, Aws_sns, Aws_sqs
 
 SourceRepository master
   Type:       git
