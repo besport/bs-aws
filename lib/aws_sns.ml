@@ -1,27 +1,38 @@
-module Make(Settings : Aws_common.SETTINGS) = struct
 
-  let debug = Aws_base.Debug.make "sns" "Debug SNS API." ["all"]
+let endpoint region =
+  Printf.sprintf "sns.%s.amazonaws.com" (Aws_common.Region.to_string region)
 
-
-  let request ~meth query =
-    let open Settings in
-    let host = Format.sprintf "sns.%s.amazonaws.com"
-                 (Aws_common.Region.to_string region) in
-    let uri = "/" in
+let publish ~credentials ~region ~topic ~message () =
+  let topic =
+    match topic with
+    | `Target_arn t -> ("TargetArn", t)
+    | `Topic_arn t -> ("TopicArn", t)
+    | `Phone_number p -> ("PhoneNumber", p)
+  in
+  let%lwt _ =
     Aws_request.perform ~credentials ~service:"sns" ~region
-                        ~secure:Settings.secure ~meth ~host ~uri ~query ()
+      ~meth:`POST ~host:(endpoint region) ~uri:"/"
+      ~query:[("Action", "Publish"); topic; ("Message", message)] ()
+  in
+  Lwt.return ()
+  (*TODO: parse XML response*)
 
+(* XXX DEPRECATED: *)
+
+module type SETTINGS = sig
+  val credentials : Aws_common.credentials
+  val region : Aws_common.Region.t
+  val secure : bool
+end
+
+module Make(Settings : SETTINGS) = struct
   let publish ~target message =
-    (*TODO: check that message has at most 262144 bytes (not characters) *)
-    let target = match target with
-    | `TargetArn t -> ("TargetArn", t)
-    | `TopicArn t -> ("TopicArn", t)
-    | `PhoneNumber p -> ("PhoneNumber", p)
+    let open Settings in
+    let topic =
+      match target with
+      | `TargetArn t   -> `Target_arn t
+      | `TopicArn t    -> `Topic_arn t
+      | `PhoneNumber p -> `Phone_number p
     in
-    let%lwt _ =
-      request ~meth:`POST
-        [("Action", "Publish"); target; ("Message", message)]
-    in
-    Lwt.return ()
-    (*TODO: parse XML response*)
+    publish ~credentials ~region ~topic ~message ()
 end

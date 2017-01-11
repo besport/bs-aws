@@ -19,12 +19,6 @@ module Region : sig
   val from_string : string -> t
 end
 
-module type SETTINGS = sig
-  val credentials : credentials
-  val region : Region.t
-  val secure : bool
-end
-
 type error =
   { request_id : string;
     code : int; (* HTTP error code *)
