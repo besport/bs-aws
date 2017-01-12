@@ -2,8 +2,11 @@
 let debug = Aws_base.Debug.make "signature" "Debug signing process." ["all"]
 
 let hash s =
-  Cryptokit.hash_string (Cryptokit.Hash.sha256 ()) s
-  |> Cryptokit.transform_string (Cryptokit.Hexa.encode ())
+  if s = "" then
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  else
+    Cryptokit.hash_string (Cryptokit.Hash.sha256 ()) s
+    |> Cryptokit.transform_string (Cryptokit.Hexa.encode ())
 
 type key = {key : string; credential_scope : string; credential : string }
 
@@ -67,6 +70,11 @@ let sign_request credentials ~service region req =
   let {Aws_base.meth; uri; query; headers; payload} = req in
   let date = Aws_base.to_ISO8601 (Unix.gettimeofday ()) in
   let headers = ("x-amz-date", date) :: headers in
+  let headers =
+    match credentials.Aws_common.session_token with
+    | Some token -> ("x-amz-session-token", token) :: headers
+    | None       -> headers
+  in
   let (creq, signed_headers) =
     canonical_request meth uri query headers payload in
   if debug () then Format.eprintf "Canonical request:@.%s@." creq;

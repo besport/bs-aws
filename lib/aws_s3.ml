@@ -47,6 +47,11 @@ let form ?secure ~credentials ~region ~bucket
      condition "key" (cond key)]
   in
   let conditions =
+    match credentials.Aws_common.session_token with
+    | Some token -> exact_match "x-amz-session-token" token :: conditions
+    | None       -> conditions
+  in
+  let conditions =
     match success_action_redirect with
       None     -> conditions
     | Some url -> condition "success_action_redirect" (cond url) :: conditions
@@ -83,6 +88,11 @@ let form ?secure ~credentials ~region ~bucket
      "x-amz-date", date;
      "x-amz-signature", Aws_signature.sign skey policy;
      "key", value key]
+  in
+  let fields =
+    match credentials.Aws_common.session_token with
+    | Some token -> ("x-amz-session-token", token) :: fields
+    | None       -> fields
   in
   let fields =
     match success_action_redirect with
