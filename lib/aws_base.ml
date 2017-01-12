@@ -103,6 +103,42 @@ let to_ISO8601 ?(extended=false) t =
     Printf.sprintf "%04d%02d%02dT%02d%02d%02dZ"
       (t.tm_year + 1900) (t.tm_mon + 1) t.tm_mday t.tm_hour t.tm_min t.tm_sec
 
+let timegm =
+  let days =
+    [|0; 31; 59; 90; 120; 151; 181; 212; 243; 273; 304; 334|] in
+  fun year mon mday hour min sec ->
+    let open Unix in
+    let r = (year - 1970) * 365 + days.(mon - 1) in
+    let r = r + (year - 1968) / 4 in
+    let r = r - (year - 1900) / 100 in
+    let r = r + (year - 1600) / 400 in
+    let r =
+      if mon <= 2 &&
+         (year mod 4 = 0) && (year mod 100 <> 0 || year mod 400 = 0)
+      then r - 1 else r in
+    let r = float (r + mday - 1) in
+    let r = 24. *. r +. float hour in
+    let r = 60. *. r +. float min in
+    60. *. r +. float sec
+
+let from_ISO8601 t =
+  Scanf.sscanf t "%04d-%02d-%02dT%02d:%02d:%02dZ" timegm
+
+(*
+let _ =
+  let l = ["1970-01-01T00:00:00Z", 0.;
+           "2016-02-01T10:10:10Z", 1454321410.;
+           "2016-03-01T10:10:10Z", 1456827010.;
+           "2017-01-01T10:10:10Z", 1483265410.;
+           "2017-02-01T10:10:10Z", 1485943810.;
+           "2017-03-02T10:10:10Z", 1488449410.;
+           "2017-12-01T10:10:10Z", 1512123010.]
+  in
+  List.iter (fun (s, f) ->
+      Format.eprintf "%s %.0f %.0f@." s (from_ISO8601 s) f;
+      assert (from_ISO8601 s = f)) l
+*)
+
 (****)
 
 module Debug = struct

@@ -1,8 +1,8 @@
 
 type credentials =
-  { access_key_id : string;
-    secret_access_key : string;
-    session_token : string option }
+  { mutable access_key_id : string;
+    mutable secret_access_key : string;
+    mutable session_token : string option }
 
 val credentials :
   access_key_id:string -> secret_access_key:string -> ?session_token:string ->

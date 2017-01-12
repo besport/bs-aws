@@ -21,6 +21,7 @@ val request :
 val print_curl_request : request -> unit
 
 val to_ISO8601 : ?extended:bool -> float -> string
+val from_ISO8601 : string -> float
 
 val url_encode : string -> string
 val encode_form_string : string -> string
