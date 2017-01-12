@@ -34,14 +34,9 @@ let http_get host uri =
   with _ ->
     Lwt.fail Failed
 
-let get_instance_credentials credentials =
-  if debug () then Format.eprintf "Reading instance credentials...@.";
-  let host = "169.254.169.254" in
-  let uri = "/latest/meta-data/iam/security-credentials/" in
-  let%lwt role = http_get host uri in
-  let%lwt creds = http_get host (uri ^ role) in
-  if debug () then
-    Format.eprintf "Credendials for %s:@.%s@." role creds;
+(****)
+
+let parse_credentials credentials creds =
   let creds = Yojson.Safe.from_string creds in
   let open Aws_base.Json in
   let access_key_id = string @@ field "AccessKeyId" creds in
@@ -58,31 +53,58 @@ let get_instance_credentials credentials =
     Format.eprintf "token: %s@." session_token;
     Format.eprintf "expiration: %.0f@." expiration
   end;
-  Lwt.return expiration
+  expiration
 
-let rec refresh credentials expiration =
-  let t = Unix.gettimeofday () in
-  let delta = t -. expiration in
-  let delay =
-    if delta > 6000. then 5400.
-    else if delta > 300. then delta -. 270.
-    else 1.
-  in
+let get_instance_credentials credentials =
+  if debug () then Format.eprintf "Reading instance credentials...@.";
+  let host = "169.254.169.254" in
+  let uri = "/latest/meta-data/iam/security-credentials/" in
+  let%lwt role = http_get host uri in
+  let%lwt creds = http_get host (uri ^ role) in
   if debug () then
-    Format.eprintf
-      "Credentials expiring in %.0f seconds; waiting %.0f seconds@."
-      delta delay;
-  Lwt.try_bind
-    (fun () -> get_instance_credentials credentials)
-    (fun expiration -> refresh credentials expiration)
-    (fun _ -> refresh credentials expiration)
+    Format.eprintf "Credentials for %s:@.%s@." role creds;
+  Lwt.return (parse_credentials credentials creds)
+
+let get_container_credentials uri credentials =
+  if debug () then Format.eprintf "Reading container credentials...@.";
+  let host = "169.254.170.2" in
+  let%lwt creds = http_get host uri in
+  if debug () then Format.eprintf "Got credentials:@.%s@." creds;
+  Lwt.return (parse_credentials credentials creds)
+
+let refreshable_credentials get credentials =
+  let rec refresh expiration =
+    let t = Unix.gettimeofday () in
+    let delta = t -. expiration in
+    let delay =
+      if delta > 6000. then 5400.
+      else if delta > 300. then delta -. 270.
+      else 1.
+    in
+    if debug () then
+      Format.eprintf
+        "Credentials expiring in %.0f seconds; waiting %.0f seconds@."
+        delta delay;
+    Lwt.try_bind
+      (fun () -> get credentials)
+      (fun expiration -> refresh expiration)
+      (fun _ -> refresh expiration)
+  in
+  let%lwt expiration = get credentials in
+  Lwt.async (fun () -> refresh expiration);
+  Lwt.return ()
 
 let default =
   lazy
     (let credentials =
        Aws_common.credentials ~access_key_id:"" ~secret_access_key:"" () in
-     let%lwt expiration = get_instance_credentials credentials in
-     Lwt.async (fun () -> refresh credentials expiration);
+     let%lwt () =
+       match Sys.getenv "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI" with
+       | uri ->
+           refreshable_credentials (get_container_credentials uri) credentials
+       | exception Not_found ->
+           refreshable_credentials get_instance_credentials credentials
+     in
      Lwt.return credentials)
 
 let get_defaults () = Lazy.force default
