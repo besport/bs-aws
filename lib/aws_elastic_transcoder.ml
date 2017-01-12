@@ -94,27 +94,6 @@ module Job = struct
     `Assoc (a |> add' "Encryption" encryption
               |> add "ThumbnailPattern" thumbnail_pattern)
 
-  let field n v =
-    match v with
-      `Assoc l -> List.assoc n l
-    | _        -> assert false
-  let string v =
-    match v with
-      `String v -> v
-    | _         -> assert false
-  let list v =
-    match v with
-      `List l -> l
-    | _       -> assert false
-  let option f v =
-    match v with
-      `Null -> None
-    | _     -> Some (f v)
-  let int v =
-    match v with
-      `Int i -> i
-    | _      -> assert false
-
   let create
         ~credentials ~region ~input ?output_key_prefix ~outputs
         ~pipeline_id () =
@@ -134,7 +113,7 @@ module Job = struct
       ~meth:`POST ~host:(endpoint region) ~uri:"/2012-09-25/jobs" ~payload ()
       >>= fun res ->
     let res = Yojson.Safe.from_string res in
-    Lwt.return (string (field "Id" (field "Job" res)))
+    Lwt.return Aws_base.Json.(string (field "Id" (field "Job" res)))
 
   type input =
     { key : string }
@@ -152,6 +131,7 @@ module Job = struct
       ~meth:`GET ~host:(endpoint region) ~uri:("/2012-09-25/jobs/" ^ id) ()
     >>= fun res ->
   let res = Yojson.Safe.from_string res in
+  let open Aws_base.Json in
   let job = field "Job" res in
   let status =
     match string (field "Status" job) with
