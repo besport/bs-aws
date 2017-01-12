@@ -1,6 +1,10 @@
 type credentials =
   { access_key_id : string;
-    secret_access_key : string }
+    secret_access_key : string;
+    session_token : string option }
+
+let credentials ~access_key_id ~secret_access_key ?session_token () =
+  { access_key_id; secret_access_key; session_token }
 
 module Region = struct
   type t =

@@ -1,7 +1,12 @@
 
 type credentials =
   { access_key_id : string;
-    secret_access_key : string }
+    secret_access_key : string;
+    session_token : string option }
+
+val credentials :
+  access_key_id:string -> secret_access_key:string -> ?session_token:string ->
+  unit -> credentials
 
 module Region : sig
   type t =
