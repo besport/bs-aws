@@ -34,5 +34,6 @@ depends: [
   "ocsigenserver"
   "re"
   "yojson"
+  "xmlm"
 ]
 available: [ ocaml-version >= "4.01" ]
