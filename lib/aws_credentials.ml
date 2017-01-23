@@ -85,6 +85,7 @@ let refreshable_credentials get credentials =
       Format.eprintf
         "Credentials expiring in %.0f seconds; waiting %.0f seconds@."
         delta delay;
+    let%lwt () = Lwt_unix.sleep delay in
     Lwt.try_bind
       (fun () -> get credentials)
       (fun expiration -> refresh expiration)
