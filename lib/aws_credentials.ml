@@ -75,7 +75,7 @@ let get_container_credentials uri credentials =
 let refreshable_credentials get credentials =
   let rec refresh expiration =
     let t = Unix.gettimeofday () in
-    let delta = t -. expiration in
+    let delta = expiration -. t  in
     let delay =
       if delta > 6000. then 5400.
       else if delta > 300. then delta -. 270.
