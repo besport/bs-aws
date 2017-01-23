@@ -48,7 +48,7 @@ let form ?secure ~credentials ~region ~bucket
   in
   let conditions =
     match credentials.Aws_common.session_token with
-    | Some token -> exact_match "x-amz-session-token" token :: conditions
+    | Some token -> exact_match "x-amz-security-token" token :: conditions
     | None       -> conditions
   in
   let conditions =
@@ -91,7 +91,7 @@ let form ?secure ~credentials ~region ~bucket
   in
   let fields =
     match credentials.Aws_common.session_token with
-    | Some token -> ("x-amz-session-token", token) :: fields
+    | Some token -> ("x-amz-security-token", token) :: fields
     | None       -> fields
   in
   let fields =

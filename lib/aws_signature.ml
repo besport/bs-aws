@@ -72,7 +72,7 @@ let sign_request credentials ~service region req =
   let headers = ("x-amz-date", date) :: headers in
   let headers =
     match credentials.Aws_common.session_token with
-    | Some token -> ("x-amz-session-token", token) :: headers
+    | Some token -> ("x-amz-security-token", token) :: headers
     | None       -> headers
   in
   let (creq, signed_headers) =
