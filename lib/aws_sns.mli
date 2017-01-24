@@ -6,6 +6,15 @@ val publish :
         | `Topic_arn of string ] ->
   message:string -> unit -> unit Lwt.t
 
+val subscribe :
+  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  endpoint:string ->
+  protocol:[ `application | `email | `email_json |
+             `http | `https | `lambda | `sms | `sqs ] ->
+  topic_arn:string ->
+  unit -> string Lwt.t
+
+
 (* XXX DEPRECATED: *)
 
 module type SETTINGS = sig

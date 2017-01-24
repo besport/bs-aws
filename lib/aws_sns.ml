@@ -1,8 +1,15 @@
 
-let endpoint region =
+let sns_endpoint region =
   Printf.sprintf "sns.%s.amazonaws.com" (Aws_common.Region.to_string region)
 
 let init_params act k v = ["Version", "2010-03-31"; "Action", act; k, v]
+
+let decode_response res =
+  let i = Xmlm.make_input ~strip:true (`String (0, res)) in
+  ignore (Xmlm.input i); (* DTD *)
+  ignore (Xmlm.input i); (* *Response *)
+  ignore (Xmlm.input i); (* *Result *)
+  i
 
 let publish ~credentials ~region ~topic ~message () =
   let query =
@@ -14,9 +21,33 @@ let publish ~credentials ~region ~topic ~message () =
   in
   let%lwt _ =
     Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
-      ~host:(endpoint region) ~uri:"/" ~query () in
+      ~host:(sns_endpoint region) ~uri:"/" ~query () in
   Lwt.return ()
   (*TODO: parse XML response*)
+
+let subscribe ~credentials ~region ~endpoint ~protocol ~topic_arn () =
+  let query =
+    ("Endpoint", endpoint) ::
+    ("Protocol",
+     match protocol with
+     | `http -> "http"
+     | `https -> "https"
+     | `email -> "email"
+     | `email_json -> "email-json"
+     | `sms -> "sms"
+     | `sqs -> "sqs"
+     | `application -> "application"
+     | `lambda -> "lambda") ::
+    init_params "Subscribe" "TopicArn" topic_arn
+  in
+  let%lwt res =
+    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+      ~host:(sns_endpoint region) ~uri:"/" ~query () in
+  let i = decode_response res in
+  ignore (Xmlm.input i); (* SubscriptionArn *)
+  match Xmlm.input i with
+    `Data s -> Lwt.return s
+  | _       -> assert false
 
 (* XXX DEPRECATED: *)
 
