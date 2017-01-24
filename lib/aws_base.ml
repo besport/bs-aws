@@ -253,8 +253,9 @@ module Param = struct
 
   let bool k v rem =
     match v with
-      Some true -> (k, "true") :: rem
-    | _         -> rem
+      Some true  -> (k, "true") :: rem
+    | Some false -> (k, "false") :: rem
+    | _          -> rem
 
   let custom k f v rem =
     match v with

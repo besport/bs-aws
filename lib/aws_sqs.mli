@@ -3,13 +3,25 @@ val create_queue :
   ?delay_seconds:int ->
   ?maximum_message_size:int ->
   ?message_retention_period:int ->
-  ?policy:string ->
+  ?policy:Yojson.Safe.json ->
   ?receive_message_wait_time_seconds:int ->
-  ?redrive_policy:string ->
+  ?redrive_policy:Yojson.Safe.json ->
   ?visibility_timeout:int ->
   ?fifo_queue:bool ->
-  ?content_based_deduplication:string ->
+  ?content_based_deduplication:bool ->
   queue_name:string -> unit -> string Lwt.t
+
+val set_queue_attributes :
+  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  ?delay_seconds:int ->
+  ?maximum_message_size:int ->
+  ?message_retention_period:int ->
+  ?policy:Yojson.Safe.json ->
+  ?receive_message_wait_time_seconds:int ->
+  ?redrive_policy:Yojson.Safe.json ->
+  ?visibility_timeout:int ->
+  ?content_based_deduplication:bool ->
+  queue_url:string -> unit -> unit Lwt.t
 
 val delete_queue :
   credentials:Aws_common.credentials -> region:Aws_common.Region.t ->

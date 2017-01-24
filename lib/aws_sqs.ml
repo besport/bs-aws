@@ -21,19 +21,26 @@ let create_queue ~credentials ~region
     ?policy ?receive_message_wait_time_seconds ?redrive_policy
     ?visibility_timeout ?fifo_queue ?content_based_deduplication
     ~queue_name () =
-  let parameters =
+  let attributes =
     let open Aws_base.Param in
-    init_params "CreateQueue" "QueueName" queue_name
-    |> string "Policy" policy
+    []
+    |> custom "Policy" Yojson.Safe.to_string policy
     |> int "VisibilityTimeout" visibility_timeout
     |> int "MaximumMessageSize" maximum_message_size
     |> int "MessageRetentionPeriod" message_retention_period
     |> int "DelaySeconds" delay_seconds
     |> int "ReceiveMessageWaitTimeSeconds" receive_message_wait_time_seconds
-    |> string "RedrivePolicy" redrive_policy
+    |> custom "RedrivePolicy" Yojson.Safe.to_string redrive_policy
     |> bool "FifoQueue" fifo_queue
-    |> string "ContentBasedDeduplication" content_based_deduplication
+    |> bool "ContentBasedDeduplication" content_based_deduplication
+    |> List.mapi
+         (fun i (k, v) ->
+            [(Printf.sprintf "Attribute.%d.Name" (i + 1), k);
+             (Printf.sprintf "Attribute.%d.Value" (i + 1), v)])
+    |> List.flatten
   in
+  let parameters =
+    init_params "CreateQueue" "QueueName" queue_name @ attributes in
   let%lwt res =
     Aws_request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
@@ -44,6 +51,37 @@ let create_queue ~credentials ~region
   match Xmlm.input i with
     `Data s -> Lwt.return s
   | _       -> assert false
+
+let set_queue_attributes ~credentials ~region
+    ?delay_seconds ?maximum_message_size ?message_retention_period
+    ?policy ?receive_message_wait_time_seconds ?redrive_policy
+    ?visibility_timeout ?content_based_deduplication
+    ~queue_url () =
+  let attributes =
+    let open Aws_base.Param in
+    []
+    |> custom "Policy" Yojson.Safe.to_string policy
+    |> int "VisibilityTimeout" visibility_timeout
+    |> int "MaximumMessageSize" maximum_message_size
+    |> int "MessageRetentionPeriod" message_retention_period
+    |> int "DelaySeconds" delay_seconds
+    |> int "ReceiveMessageWaitTimeSeconds" receive_message_wait_time_seconds
+    |> custom "RedrivePolicy" Yojson.Safe.to_string redrive_policy
+    |> bool "ContentBasedDeduplication" content_based_deduplication
+    |> List.mapi
+         (fun i (k, v) ->
+            [(Printf.sprintf "Attribute.%d.Name" (i + 1), k);
+             (Printf.sprintf "Attribute.%d.Value" (i + 1), v)])
+    |> List.flatten
+  in
+  let parameters =
+    init_params "SetQueueAttributes" "QueueUrl" queue_url @ attributes in
+  let%lwt _ =
+    Aws_request.perform
+      ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
+      ~uri:"/" ~query:parameters ()
+  in
+  Lwt.return ()
 
 let delete_queue ~credentials ~region ~queue_url () =
   let parameters =
