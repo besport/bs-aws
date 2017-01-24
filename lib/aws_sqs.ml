@@ -83,6 +83,78 @@ let set_queue_attributes ~credentials ~region
   in
   Lwt.return ()
 
+module Attribute = struct
+  type set = (string * string) list
+  type t = string
+  let attribute name _ = name
+  let all = "All"
+  let approximate_number_of_messages =
+    attribute "ApproximateNumberOfMessages" int_of_string
+  let approximate_number_of_messages_delayed =
+    attribute "ApproximateNumberOfMessagesDelayed" int_of_string
+  let approximate_number_of_messages_not_visible =
+    attribute "ApproximateNumberOfMessagesNotVisible" int_of_string
+  let created_timestamp = attribute "CreatedTimestamp" float_of_string
+  let delay_seconds = attribute "DelaySeconds" int_of_string
+  let last_modified_timestamp =
+    attribute "LastModifiedTimestamp" float_of_string
+  let maximum_message_size = attribute "MaximumMessageSize" int_of_string
+  let message_retention_period =
+    attribute "MessageRetentionPeriod" int_of_string
+  let policy = attribute "Policy" Yojson.Safe.from_string
+  let queue_arn = attribute "QueueArn" (fun x -> x)
+  let receive_message_wait_time_seconds =
+    attribute "ReceiveMessageWaitTimeSeconds" int_of_string
+  let redrive_policy = attribute "RedrivePolicy" Yojson.Safe.from_string
+  let visibility_timeout = attribute "VisibilityTimeout" int_of_string
+  let fifo_queue = attribute "FifoQueue" bool_of_string
+  let content_based_deduplication =
+    attribute "ContentBasedDeduplication" bool_of_string
+  module Get = struct
+    type 'a t = set -> 'a
+    let attribute name extract = fun l -> extract (List.assoc name l)
+    let approximate_number_of_messages =
+      attribute "ApproximateNumberOfMessages" int_of_string
+    let approximate_number_of_messages_delayed =
+      attribute "ApproximateNumberOfMessagesDelayed" int_of_string
+    let approximate_number_of_messages_not_visible =
+      attribute "ApproximateNumberOfMessagesNotVisible" int_of_string
+    let created_timestamp = attribute "CreatedTimestamp" float_of_string
+    let delay_seconds = attribute "DelaySeconds" int_of_string
+    let last_modified_timestamp =
+      attribute "LastModifiedTimestamp" float_of_string
+    let maximum_message_size = attribute "MaximumMessageSize" int_of_string
+    let message_retention_period =
+      attribute "MessageRetentionPeriod" int_of_string
+    let policy = attribute "Policy" Yojson.Safe.from_string
+    let queue_arn = attribute "QueueArn" (fun x -> x)
+    let receive_message_wait_time_seconds =
+      attribute "ReceiveMessageWaitTimeSeconds" int_of_string
+    let redrive_policy = attribute "RedrivePolicy" Yojson.Safe.from_string
+    let visibility_timeout = attribute "VisibilityTimeout" int_of_string
+    let fifo_queue = attribute "FifoQueue" bool_of_string
+    let content_based_deduplication =
+      attribute "ContentBasedDeduplication" bool_of_string
+  end
+end
+
+let get_queue_attributes ~credentials ~region
+    ~attributes ~queue_url () =
+  let parameters =
+    init_params "GetQueueAttributes" "QueueUrl" queue_url @
+    List.mapi (fun i nm -> (Printf.sprintf "AttributeName.%d" (i + 1), nm))
+      attributes
+  in
+  let%lwt res =
+    Aws_request.perform
+      ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
+      ~uri:"/" ~query:parameters ()
+  in
+  Lwt.return
+    (res |> decode_response |> Aws_base.Xml.(repeat (element record))
+     |> List.map
+          (fun (_, r) -> (List.assoc "Name" r, List.assoc "Value" r)))
+
 let delete_queue ~credentials ~region ~queue_url () =
   let parameters =
     init_params "DeleteQueue" "QueueUrl" (full_queue_url region queue_url) in
