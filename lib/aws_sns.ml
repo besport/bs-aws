@@ -49,6 +49,24 @@ let subscribe ~credentials ~region ~endpoint ~protocol ~topic_arn () =
     `Data s -> Lwt.return s
   | _       -> assert false
 
+let set_subscription_attributes ~credentials ~region
+    ~attribute ~subscription_arn () =
+  let query =
+    ("AttributeName",
+     match attribute with
+       `Delivery_policy _      -> "DeliveryPolicy"
+     | `Raw_message_delivery _ -> "RawMessageDelivery") ::
+    ("AttributeValue",
+     match attribute with
+       `Delivery_policy p      -> Yojson.Safe.to_string p
+     | `Raw_message_delivery b -> string_of_bool b) ::
+    init_params "SetSubscriptionAttributes" "SubscriptionArn" subscription_arn
+  in
+  let%lwt _ =
+    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+      ~host:(sns_endpoint region) ~uri:"/" ~query () in
+  Lwt.return ()
+
 (* XXX DEPRECATED: *)
 
 module type SETTINGS = sig

@@ -14,6 +14,12 @@ val subscribe :
   topic_arn:string ->
   unit -> string Lwt.t
 
+val set_subscription_attributes :
+  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  attribute:[ `Delivery_policy of Yojson.Safe.json
+            | `Raw_message_delivery of bool ] ->
+  subscription_arn:string -> unit ->
+  unit Lwt.t
 
 (* XXX DEPRECATED: *)
 
