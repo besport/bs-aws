@@ -49,6 +49,15 @@ let subscribe ~credentials ~region ~endpoint ~protocol ~topic_arn () =
     `Data s -> Lwt.return s
   | _       -> assert false
 
+let unsubscribe ~credentials ~region ~subscription_arn () =
+  let query =
+    init_params "Unsubscribe" "SubscriptionArn" subscription_arn
+  in
+  let%lwt res =
+    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+      ~host:(sns_endpoint region) ~uri:"/" ~query () in
+  Lwt.return ()
+
 let set_subscription_attributes ~credentials ~region
     ~attribute ~subscription_arn () =
   let query =
