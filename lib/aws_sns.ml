@@ -11,8 +11,51 @@ let decode_response res =
   ignore (Xmlm.input i); (* *Result *)
   i
 
-let publish ~credentials ~region ~topic ~message () =
+type message_attribute_value =
+  [ `Binary of string | `Number of string | `String of string ]
+
+let string prefix s rem = (prefix, s) :: rem
+
+let list fmt prefix l rem =
+  snd @@
+  List.fold_left
+    (fun (i, rem) x ->
+       (i + 1, fmt (prefix ^ ".entry." ^ string_of_int i) x rem))
+    (1, rem) l
+
+let entry prefix (k, v) rem =
+  string (prefix ^ ".Name") k @@
+  let prefix = prefix ^ ".Value" in
+  match v with
+  | `String s ->
+      string (prefix ^ ".DataType") "String" @@
+      string (prefix ^ ".StringValue") s @@
+      rem
+  | `Number s ->
+      string (prefix ^ ".DataType") "Number" @@
+      string (prefix ^ ".StringValue") s @@
+      rem
+  | `Binary s ->
+      string (prefix ^ ".DataType") "Binary" @@
+      string (prefix ^ ".BinaryValue") (B64.encode s) @@
+      rem
+
+let sms_attributes ?sender_id ?max_price ?sms_type () =
+  List.map (fun (k, v) -> (k, `String v)) @@
+  let open Aws_base.Param in
+  string "AWS.SNS.SMS.SenderID" sender_id @@
+  custom "AWS.SNS.SMS.MaxPrice" string_of_float max_price @@
+  custom "AWS.SNS.SMS.SMSType"
+    (fun t ->
+       match t with
+       | `Promotional -> "Promotional"
+       | `Transactional -> "Transactional")
+    sms_type @@
+  []
+
+let publish ~credentials ~region ~topic ~message ?(message_attributes = []) () =
   let query =
+    list entry "MessageAttributes" message_attributes @@
     (match topic with
      | `Target_arn t -> ("TargetArn", t)
      | `Topic_arn t -> ("TopicArn", t)

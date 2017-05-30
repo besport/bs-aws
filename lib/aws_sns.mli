@@ -1,10 +1,21 @@
 
+type message_attribute_value =
+  [ `Binary of string | `Number of string | `String of string ]
+
+val sms_attributes :
+  ?sender_id:string -> ?max_price:float ->
+  ?sms_type:[`Promotional | `Transactional] ->
+  unit ->
+  (string * message_attribute_value) list
+
 val publish :
   credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
   topic:[ `Phone_number of string
         | `Target_arn of string
         | `Topic_arn of string ] ->
-  message:string -> unit -> unit Lwt.t
+  message:string ->
+  ?message_attributes:(string * message_attribute_value) list ->
+  unit -> unit Lwt.t
 
 val subscribe :
   credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
