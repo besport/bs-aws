@@ -31,7 +31,7 @@ depends: [
   "oasis" {build & >= "0.4"}
   "ocamlbuild" {build}
   "ocamlfind" {build}
-  "ocsigenserver"
+  "cohttp"
   "re"
   "yojson"
   "xmlm"

@@ -1,14 +1,5 @@
 let debug = Aws_base.Debug.make "request" "Debug HTTP requests." ["all"]
 
-let translate_meth m =
-  let open Ocsigen_http_frame.Http_header in
-  match m with
-    `GET    -> GET
-  | `POST   -> POST
-  | `PUT    -> PUT
-  | `DELETE -> DELETE
-  | `HEAD -> HEAD
-
 let (>>=) = Lwt.bind
 
 let encode_post_query req =
@@ -32,6 +23,21 @@ let encode_post_query req =
   | _ ->
       req
 
+module String_map = Map.Make(struct
+    type t = string
+    let compare = compare
+  end)
+
+let unflatten_query l =
+  String_map.bindings
+    (List.fold_left
+       (fun acc (id, v) ->
+          let id = Aws_base.url_encode id and v = Aws_base.url_encode v in
+          String_map.add id
+            (try v :: String_map.find id acc with Not_found -> [v]) acc)
+       String_map.empty
+       l)
+
 let perform ~credentials ~service ~region
       ?secure ~meth ~host ~uri ?query ?headers ?payload () =
   let {Aws_base.secure; meth; uri; query; headers; payload } as req =
@@ -40,77 +46,44 @@ let perform ~credentials ~service ~region
     |> Aws_signature.sign_request credentials ~service region
   in
   if debug () then Aws_base.print_curl_request req;
-  let uri =
-    if query = [] then uri else
-      uri ^ "?" ^
-      String.concat "&"
-        (List.map
-           (fun (f, v) ->
-              Format.sprintf "%s=%s"
-                (Aws_base.url_encode f) (Aws_base.url_encode v))
-           query)
-  in
   let headers =
     List.fold_left
-      (fun h (n, v) ->
-        Http_headers.add (Http_headers.name n) v h)
-      Http_headers.empty headers
+      (fun acc (id, v) -> Cohttp.Header.add acc id v)
+      (Cohttp.Header.init ())
+      headers
+  and body =
+    match meth with
+    | `POST | `PUT    -> Some (Cohttp_lwt_body.of_string payload)
+    | `GET  | `DELETE | `HEAD -> None
+  and uri =
+    Uri.make ()
+      ~scheme:(if secure then "https" else "http")
+      ~host ~path:uri ~query:(unflatten_query query)
   in
-  Ocsigen_lib.Ip_address.get_inet_addr host >>= fun inet_addr ->
-  Ocsigen_http_client.raw_request ~keep_alive:false ~headers ~https:secure
-    ?port:(if secure then Some 443 else None)
-    ~content:(match meth with
-                `POST | `PUT    -> Some (Ocsigen_stream.of_string payload)
-              | `GET  | `DELETE | `HEAD -> None)
-    ?content_length:(match meth with
-                `POST | `PUT    -> Some (String.length payload |> Int64.of_int)
-              | `GET  | `DELETE | `HEAD -> None)
-    ~http_method:(translate_meth meth)
-    ~host
-    ~uri
-    ~inet_addr
-    () () >>= fun resp ->
-  let { Ocsigen_http_frame.frame_header = header; frame_content = content } =
-    resp in
-  let (code, headers) =
-    match header with
-      { Ocsigen_http_frame.Http_header.mode =
-          Ocsigen_http_frame.Http_header.Answer code; headers } ->
-      (code, headers)
-    | _ ->
-      assert false
-  in
-  begin match content with
-    Some content ->
-      Lwt.finalize
-        (fun () ->
-           Ocsigen_stream.string_of_stream 16384 (Ocsigen_stream.get content))
-        (fun () ->
-           Ocsigen_stream.finalize content `Success)
-  | None ->
-      Lwt.return ""
-  end >>= fun content ->
-  let headers =
-    Http_headers.fold (fun s l acc ->
-    let s = Http_headers.name_to_string s in
-    (List.map (fun v -> (s,v)) l) @ acc) headers []
-  in
+  Cohttp_lwt_unix.Client.call ~headers ?body
+    (meth :> Cohttp.Code.meth)
+    uri >>= fun (response, body) ->
+  let code = Cohttp.Response.status response
+  and headers = Cohttp.Response.headers response in
+  Cohttp_lwt_body.to_string body >>= fun body ->
   if debug () then begin
-    Format.eprintf "HTTP response: %d@." code;
-    List.iter (fun (s, v) -> Format.eprintf "%s: %s@." s v) headers;
-    Format.eprintf "%s@." content
+    Format.eprintf "HTTP response: %d@." (Cohttp.Code.code_of_status code);
+    Cohttp.Header.iter
+      (fun id l -> List.iter (Format.eprintf "%s: %s@." id) l)
+      headers;
+    Format.eprintf "%s@." body
   end;
   match code with
-    200 | 201 | 204 ->
-      Lwt.return content
+  | `OK | `Created | `No_content ->
+    Lwt.return body
   | _ ->
-      let error =
-        {Aws_common.request_id = "";  (*XXX*)
-         code = code;
-         typ = "";
-         message = content}
-      in
-      Lwt.fail (Aws_common.Error error)
+    let error =
+      {Aws_common.request_id = "";  (*XXX*)
+       code = Cohttp.Code.code_of_status code;
+       typ = "";
+       message = body}
+    in
+    Lwt.fail (Aws_common.Error error)
 
 (* XXX
 - crash if cannot connect!

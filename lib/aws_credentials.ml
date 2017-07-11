@@ -4,33 +4,14 @@ let debug =
 
 exception Failed
 
-let http_get host uri =
+let http_get host path =
   try%lwt
-    let inet_addr = Unix.inet_addr_of_string host in
-    let%lwt res =
-      Ocsigen_http_client.raw_request ~keep_alive:false
-      ~http_method:Ocsigen_http_frame.Http_header.GET
-      ~inet_addr ~host ~uri ~content:None
-      () ()
-    in
-    let code =
-      match res.Ocsigen_http_frame.frame_header with
-      | { Ocsigen_http_frame.Http_header.mode =
-            Ocsigen_http_frame.Http_header.Answer code } ->
-          code
-      | _ ->
-          assert false
-    in
-    if code <> 200 then Lwt.fail Failed else
-    match res.Ocsigen_http_frame.frame_content with
-      Some content ->
-        Lwt.finalize
-          (fun () ->
-             Ocsigen_stream.string_of_stream 16384 (Ocsigen_stream.get content))
-          (fun () ->
-             Ocsigen_stream.finalize content `Success)
-    | None ->
-        Lwt.return ""
+    let%lwt response, body =
+      Cohttp_lwt_unix.Client.call
+        `GET (Uri.make ~scheme:"http" ~path ~host ()) in
+    match Cohttp.Response.status response with
+    | `OK -> Cohttp_lwt_body.to_string body
+    | _   -> Lwt.fail Failed
   with _ ->
     Lwt.fail Failed
 
