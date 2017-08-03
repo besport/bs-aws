@@ -13,8 +13,8 @@ OCamlVersion:           >= 4.01
 
 Library "bs-aws"
   Path:                 lib
-  XMETARequires:        lwt,yojson,xmlm,base64,ocsigenserver
-  BuildDepends:         lwt.ppx,yojson,xmlm,base64,ocsigenserver,threads
+  XMETARequires:        lwt,yojson,xmlm,base64
+  BuildDepends:         lwt.ppx,yojson,xmlm,base64,cohttp.lwt,threads,cryptokit
   InternalModules:      Aws_base, Aws_request, Aws_signature
   Modules:              Aws_common, Aws_elastic_transcoder, Aws_lambda,
                         Aws_s3, Aws_sns, Aws_sqs, Aws_ses, Aws_credentials
