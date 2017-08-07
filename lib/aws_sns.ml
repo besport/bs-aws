@@ -1,3 +1,5 @@
+let debug = Aws_base.Debug.make "sns" "Debug SNS API." ["all"]
+let debug = Aws_base.Debug.make "sns" "Debug SNS API." ["all"]
 
 let sns_endpoint region =
   Printf.sprintf "sns.%s.amazonaws.com" (Aws_common.Region.to_string region)
@@ -46,7 +48,7 @@ let sms_attributes ?sender_id ?max_price ?sms_type () =
   string "AWS.SNS.SMS.SenderID" sender_id @@
   custom "AWS.SNS.SMS.MaxPrice" string_of_float max_price @@
   custom "AWS.SNS.SMS.SMSType"
-    (fun t ->
+   (fun t ->
        match t with
        | `Promotional -> "Promotional"
        | `Transactional -> "Transactional")
@@ -62,9 +64,13 @@ let publish ~credentials ~region ~topic ~message ?(message_attributes = []) () =
      | `Phone_number p -> ("PhoneNumber", p)) ::
     init_params "Publish" "Message" message
   in
-  Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
-    ~host:(sns_endpoint region) ~uri:"/" ~query ()
-(*TODO: parse XML response*)
+  let%lwt s =
+    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+      ~host:(sns_endpoint region) ~uri:"/" ~query ()
+  in
+  if debug () then Printf.eprintf "Publish response:\n%s%!" s;
+  Lwt.return ()
+  (*TODO: parse XML response*)
 
 let subscribe ~credentials ~region ~endpoint ~protocol ~topic_arn () =
   let query =
@@ -112,7 +118,7 @@ let set_subscription_attributes ~credentials ~region
      | `Raw_message_delivery b -> string_of_bool b) ::
     init_params "SetSubscriptionAttributes" "SubscriptionArn" subscription_arn
   in
-  let%lwt _ =
+  let%lwt s =
     Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
       ~host:(sns_endpoint region) ~uri:"/" ~query () in
   Lwt.return ()
