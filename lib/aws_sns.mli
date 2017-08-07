@@ -15,7 +15,7 @@ val publish :
         | `Topic_arn of string ] ->
   message:string ->
   ?message_attributes:(string * message_attribute_value) list ->
-  unit -> unit Lwt.t
+  unit -> string Lwt.t
 
 val subscribe :
   credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
@@ -50,5 +50,5 @@ module Make(Settings : SETTINGS) : sig
     target:[ `PhoneNumber of string
            | `TargetArn of string
            | `TopicArn of string ] ->
-    string -> unit Lwt.t
+    string -> string Lwt.t
 end

@@ -62,11 +62,9 @@ let publish ~credentials ~region ~topic ~message ?(message_attributes = []) () =
      | `Phone_number p -> ("PhoneNumber", p)) ::
     init_params "Publish" "Message" message
   in
-  let%lwt _ =
-    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
-      ~host:(sns_endpoint region) ~uri:"/" ~query () in
-  Lwt.return ()
-  (*TODO: parse XML response*)
+  Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+    ~host:(sns_endpoint region) ~uri:"/" ~query ()
+(*TODO: parse XML response*)
 
 let subscribe ~credentials ~region ~endpoint ~protocol ~topic_arn () =
   let query =
