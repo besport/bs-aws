@@ -108,4 +108,17 @@ let default =
      in
      Lwt.return credentials)
 
-let get_defaults () = Lazy.force default
+let get_env v =
+  try
+    Some (Sys.getenv v)
+  with Not_found ->
+    None
+
+let get_defaults () =
+  match get_env "AWS_ACCESS_KEY_ID", get_env "AWS_SECRET_ACCESS_KEY" with
+  | Some access_key_id, Some secret_access_key ->
+    let session_token = get_env "AWS_SECURITY_TOKEN" in
+    Lwt.return @@
+    Aws_common.credentials ~access_key_id ~secret_access_key ?session_token ()
+  | _, _ ->
+    Lazy.force default
