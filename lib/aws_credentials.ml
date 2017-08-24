@@ -95,18 +95,17 @@ let refreshable_credentials get credentials =
   Lwt.async (fun () -> refresh expiration);
   Lwt.return ()
 
-let default =
-  lazy
-    (let credentials =
-       Aws_common.credentials ~access_key_id:"" ~secret_access_key:"" () in
-     let%lwt () =
-       match Sys.getenv "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI" with
-       | uri ->
-           refreshable_credentials (get_container_credentials uri) credentials
-       | exception Not_found ->
-           refreshable_credentials get_instance_credentials credentials
-     in
-     Lwt.return credentials)
+let get_refreshable_credentials () =
+  let credentials =
+    Aws_common.credentials ~access_key_id:"" ~secret_access_key:"" () in
+  let%lwt () =
+    match Sys.getenv "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI" with
+    | uri ->
+      refreshable_credentials (get_container_credentials uri) credentials
+    | exception Not_found ->
+      refreshable_credentials get_instance_credentials credentials
+  in
+  Lwt.return credentials
 
 let get_env v =
   try
@@ -114,11 +113,22 @@ let get_env v =
   with Not_found ->
     None
 
-let get_defaults () =
+let get_env_credentials () =
   match get_env "AWS_ACCESS_KEY_ID", get_env "AWS_SECRET_ACCESS_KEY" with
   | Some access_key_id, Some secret_access_key ->
     let session_token = get_env "AWS_SECURITY_TOKEN" in
-    Lwt.return @@
-    Aws_common.credentials ~access_key_id ~secret_access_key ?session_token ()
+    Some
+      (Aws_common.credentials ()
+         ~access_key_id ~secret_access_key ?session_token)
   | _, _ ->
-    Lazy.force default
+    None
+
+let default =
+  lazy
+    (match get_env_credentials () with
+     | Some credentials ->
+       Lwt.return credentials
+     | None ->
+       get_refreshable_credentials ())
+
+let get_defaults () = Lazy.force default
