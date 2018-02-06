@@ -53,7 +53,7 @@ let perform ~credentials ~service ~region
       headers
   and body =
     match meth with
-    | `POST | `PUT    -> Some (Cohttp_lwt_body.of_string payload)
+    | `POST | `PUT    -> Some (Cohttp_lwt.Body.of_string payload)
     | `GET  | `DELETE | `HEAD -> None
   and uri =
     Uri.make ()
@@ -65,7 +65,7 @@ let perform ~credentials ~service ~region
     uri >>= fun (response, body) ->
   let code = Cohttp.Response.status response
   and headers = Cohttp.Response.headers response in
-  Cohttp_lwt_body.to_string body >>= fun body ->
+  Cohttp_lwt.Body.to_string body >>= fun body ->
   if debug () then begin
     Format.eprintf "HTTP response: %d@." (Cohttp.Code.code_of_status code);
     Cohttp.Header.iter

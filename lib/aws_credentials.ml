@@ -10,7 +10,7 @@ let http_get host path =
       Cohttp_lwt_unix.Client.call
         `GET (Uri.make ~scheme:"http" ~path ~host ()) in
     match Cohttp.Response.status response with
-    | `OK -> Cohttp_lwt_body.to_string body
+    | `OK -> Cohttp_lwt.Body.to_string body
     | _   -> Lwt.fail Failed
   with _ ->
     Lwt.fail Failed
