@@ -35,5 +35,6 @@ depends: [
   "re"
   "yojson"
   "xmlm"
+  "ezxmlm"
 ]
 available: [ ocaml-version >= "4.01" ]
