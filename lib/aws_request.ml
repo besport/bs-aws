@@ -60,7 +60,7 @@ let perform ~credentials ~service ~region
       ~scheme:(if secure then "https" else "http")
       ~host ~path:uri ~query:(unflatten_query query)
   in
-  Cohttp_lwt_unix.Client.call ~headers ?body
+  Cohttp_lwt_unix.Client.call ~chunked:false ~headers ?body
     (meth :> Cohttp.Code.meth)
     uri >>= fun (response, body) ->
   let code = Cohttp.Response.status response
