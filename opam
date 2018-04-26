@@ -28,6 +28,7 @@ depends: [
   "base64"
   "cryptokit"
   "lwt"
+  "lwt_ppx"
   "oasis" {build & >= "0.4"}
   "ocamlbuild" {build}
   "ocamlfind" {build}
