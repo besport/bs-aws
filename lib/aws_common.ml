@@ -52,4 +52,10 @@ type error =
 
 exception Error of error
 
+let () = Printexc.register_printer @@ function
+  | Error {request_id; code; typ; message} ->
+      let msg = Printf.sprintf "Aws_common.Error %d: %s" code message
+      in Some msg
+  | _ -> None
+
 let enable_debug = Aws_base.Debug.enable
