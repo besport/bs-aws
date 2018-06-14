@@ -11,6 +11,7 @@ type status_info =
 
 type db_instance =
   { endpoint : endpoint;
+    db_instance_status : string;
     status_infos : status_info list;
     read_replica_db_instance_identifiers : string list }
 

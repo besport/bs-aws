@@ -24,6 +24,7 @@ type status_info =
 
 type db_instance =
   { endpoint : endpoint;
+    db_instance_status : string;
     status_infos : status_info list;
     read_replica_db_instance_identifiers : string list }
 
@@ -65,6 +66,7 @@ let describe_db_instances ~credentials ~region ?db_instance_identifier () =
     |> List.map
       (fun i ->
          { endpoint = parse_endpoint (member "Endpoint" i);
+           db_instance_status = data_to_string (member "DBInstanceStatus" i);
            status_infos =
              if has_member "StatusInfos" i then
                List.map parse_status_info
