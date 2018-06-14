@@ -10,7 +10,8 @@ type status_info =
     message : string option }
 
 type db_instance =
-  { endpoint : endpoint option;
+  { db_instance_identifier : string;
+    endpoint : endpoint option;
     db_instance_status : string;
     status_infos : status_info list;
     read_replica_db_instance_identifiers : string list }
