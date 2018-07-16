@@ -15,6 +15,11 @@ let bucket_url ?(secure=true) region bucket =
   else
     Format.sprintf "http://%s.s3-%s.amazonaws.com/" bucket.name region
 
+let hostname region =
+  Format.sprintf "s3-%s.amazonaws.com" (Aws_common.Region.to_string region)
+
+let bucket_host region bucket = Format.sprintf "%s.%s" bucket (hostname region)
+
 (****)
 
 let exact_match field value = `Assoc [field, `String value]
@@ -106,10 +111,31 @@ let form ?secure ~credentials ~region ~bucket
   in
   (bucket_url ?secure region bucket, fields)
 
+let object_url ?secure ~credentials ~region ~bucket ~expiration ~key
+    ?response_content_type ?response_content_language ?response_expires
+    ?response_cache_control ?response_content_disposition
+    ?response_content_encoding () =
+  let host = bucket_host region bucket in
+  let uri = "/" ^ key in
+  let query =
+    let add k v r = match v with Some v -> (k, v) :: r | None -> r in
+    add "response-content-type" response_content_type @@
+    add "response-content-language" response_content_language @@
+    add "response-expires" response_expires @@
+    add "response-cache-control" response_cache_control @@
+    add "response-content-disposition" response_content_disposition @@
+    add "response-content-encoding" response_content_encoding @@
+    []
+  in
+  let {Aws_base.uri; query; headers } =
+    Aws_base.request ~meth:`GET ?secure ~host ~uri ~query ()
+    |> Aws_signature.sign_request_using_query_parameters
+      credentials ~service:"s3" region ~expiration ~unsigned_payload:true
+  in
+  Uri.make ~scheme:"https" ~host ~path:uri
+    ~query:(List.map (fun (k, v) -> (k, [v])) query) ()
+
 let hash str = ("x-amz-content-sha256", Aws_signature.hash str)
-let hostname region =
-  Format.sprintf "s3-%s.amazonaws.com" (Aws_common.Region.to_string region)
-let bucket_host region bucket = Format.sprintf "%s.%s" bucket (hostname region)
 
 let request
     ~credentials ~region ?secure ~meth ?(host = hostname region) ~uri

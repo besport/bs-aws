@@ -16,6 +16,19 @@ val form :
   unit ->
   string * (string * string) list
 
+val object_url :
+  ?secure:bool -> credentials:Aws_common.credentials ->
+  region:Aws_common.Region.t -> bucket:string ->
+  expiration:int ->
+  key:string ->
+  ?response_content_type:string ->
+  ?response_content_language:string ->
+  ?response_expires:string ->
+  ?response_cache_control:string ->
+  ?response_content_disposition:string ->
+  ?response_content_encoding:string ->
+  unit -> Uri.t
+
 val list :
   credentials:Aws_common.credentials ->
   region:Aws_common.Region.t ->

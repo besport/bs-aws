@@ -37,7 +37,8 @@ let sign key sts =
 
 (****)
 
-let canonical_request meth uri query headers payload =
+let canonical_request
+      meth uri query headers ?(unsigned_payload = false) payload =
   let args =
     List.map
       (fun (k, v) -> (k, Aws_base.url_encode v)) query
@@ -51,7 +52,8 @@ let canonical_request meth uri query headers payload =
     List.sort (fun (k1, _) (k2, _) -> compare k1 k2) headers in
   let signed_headers = String.concat ";" (List.map fst headers) in
   let headers = List.map (fun (k, v) -> k ^ ":" ^ v) headers in
-  let payload_hash = hash payload in
+  let payload_hash =
+    if unsigned_payload then "UNSIGNED-PAYLOAD" else hash payload in
   (String.concat "\n"
      (Aws_base.string_of_meth meth :: uri :: args ::
       headers @ [""; signed_headers; payload_hash]),
@@ -84,3 +86,32 @@ let sign_request credentials ~service region req =
   let signature = sign key sts in
   let authz = authorization_header key signed_headers signature in
   {req with Aws_base.headers = ("authorization", authz) :: headers}
+
+let sign_request_using_query_parameters
+    credentials ~service region ~expiration ?unsigned_payload req =
+  let {Aws_base.meth; uri; query; headers; payload} = req in
+  let date = Aws_base.to_ISO8601 (Unix.gettimeofday ()) in
+  let key = signing_key credentials date region service in
+  let (_, signed_headers) =
+    canonical_request meth uri query headers ?unsigned_payload payload in
+  let query =
+    ("X-Amz-Algorithm", "AWS4-HMAC-SHA256") ::
+    ("X-Amz-Credential", key.credential) ::
+    ("X-Amz-Date", date) ::
+    ("X-Amz-Expires", string_of_int expiration) ::
+    ("X-Amz-SignedHeaders", signed_headers) ::
+    query
+  in
+  let query =
+    match credentials.Aws_common.session_token with
+    | Some token -> ("X-Amz-Security-Token", token) :: query
+    | None       -> query
+  in
+  let (creq, signed_headers) =
+    canonical_request meth uri query headers ?unsigned_payload payload in
+  if debug () then Format.eprintf "Canonical request:@.%s@." creq;
+  let sts = string_to_sign date key creq in
+  if debug () then Format.eprintf "String to sign:%s@." sts;
+  let signature = sign key sts in
+  let query = ("X-Amz-Signature", signature) :: query in
+  {req with Aws_base.query}
