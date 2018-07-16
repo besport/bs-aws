@@ -28,16 +28,6 @@ module String_map = Map.Make(struct
     let compare = compare
   end)
 
-let unflatten_query l =
-  String_map.bindings
-    (List.fold_left
-       (fun acc (id, v) ->
-          let id = Aws_base.url_encode id and v = Aws_base.url_encode v in
-          String_map.add id
-            (try v :: String_map.find id acc with Not_found -> [v]) acc)
-       String_map.empty
-       l)
-
 let perform ~credentials ~service ~region
       ?secure ~meth ~host ~uri ?query ?headers ?payload () =
   let {Aws_base.secure; meth; uri; query; headers; payload } as req =
@@ -58,7 +48,7 @@ let perform ~credentials ~service ~region
   and uri =
     Uri.make ()
       ~scheme:(if secure then "https" else "http")
-      ~host ~path:uri ~query:(unflatten_query query)
+      ~host ~path:uri ~query:(List.map (fun (k, v) -> (k, [v])) query)
   in
   Cohttp_lwt_unix.Client.call ~chunked:false ~headers ?body
     (meth :> Cohttp.Code.meth)
