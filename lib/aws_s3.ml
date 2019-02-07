@@ -85,7 +85,7 @@ let form ?secure ~credentials ~region ~bucket
     |> Yojson.Safe.to_string
   in
   if debug () then Format.eprintf "Policy: %s@." policy;
-  let policy = B64.encode policy in
+  let policy = Base64.encode_string policy in
   let fields =
     ["policy", policy;
      "x-amz-algorithm", "AWS4-HMAC-SHA256";

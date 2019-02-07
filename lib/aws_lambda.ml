@@ -12,7 +12,7 @@ let invoke
     let open Aws_base.Param in
     []
     |> custom "x-amz-client-context"
-         (fun c -> B64.encode (Yojson.Safe.to_string  c))
+         (fun c -> Base64.encode_string (Yojson.Safe.to_string  c))
          client_context
     |> custom "x-amz-invocation-type"
          (fun t ->

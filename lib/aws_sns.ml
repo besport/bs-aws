@@ -37,7 +37,7 @@ let entry prefix (k, v) rem =
       rem
   | `Binary s ->
       string (prefix ^ ".DataType") "Binary" @@
-      string (prefix ^ ".BinaryValue") (B64.encode s) @@
+      string (prefix ^ ".BinaryValue") (Base64.encode_string s) @@
       rem
 
 let sms_attributes ?sender_id ?max_price ?sms_type () =
