@@ -1,31 +1,32 @@
-opam-version: "1.2"
+opam-version: "2.0"
 name: "bs-aws"
-version: "0.3"
+synopsis: "an incomplete interface to Amazon Web Services"
+description: "an incomplete interface to Amazon Web Services"
+version: "0.4"
 maintainer: "Jan Rochel <jan@rochel.info>"
 authors: [ "Jerôme Vouillon"
            "Jan Rochel" ]
 license: "LGPL with OCaml linking exception"
 homepage: "https://github.com/besport/bs-aws"
-dev-repo: "https://github.com/besport/bs-aws.git"
+dev-repo: "git+https://github.com/besport/bs-aws.git"
 bug-reports: "https://github.com/besport/bs-aws/issues"
 build: [
   ["oasis" "setup"]
   ["ocaml" "setup.ml" "-configure" "--prefix" prefix]
   ["ocaml" "setup.ml" "-build"]
+  ["oasis" "setup"] {with-test}
+  ["ocaml" "setup.ml" "-configure" "--enable-tests"] {with-test}
+  ["ocaml" "setup.ml" "-build"] {with-test}
+  ["ocaml" "setup.ml" "-test"] {with-test}
 ]
 install: ["ocaml" "setup.ml" "-install"]
 remove: [
   ["ocamlfind" "remove" "bs-aws"]
 ]
-build-test: [
-  ["oasis" "setup"]
-  ["ocaml" "setup.ml" "-configure" "--enable-tests"]
-  ["ocaml" "setup.ml" "-build"]
-  ["ocaml" "setup.ml" "-test"]
-]
 depends: [
+  "ocaml" {>= "4.01"}
   "base-threads"
-  "base64"
+  "base64" {>= "3.0.0"}
   "cryptokit"
   "lwt"
   "lwt_ppx"
@@ -34,8 +35,8 @@ depends: [
   "ocamlfind" {build}
   "cohttp-lwt-unix" {>= "1.0"}
   "re"
-  "yojson"
+  "yojson" {>= "1.6"}
   "xmlm"
   "ezxmlm"
 ]
-available: [ ocaml-version >= "4.01" ]
+flags: light-uninstall
