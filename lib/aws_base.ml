@@ -217,29 +217,6 @@ module Xml = struct
   let record = repeat field
 end
 
-module Json = struct
-  let field n v =
-    match v with
-      `Assoc l -> List.assoc n l
-    | _        -> assert false
-  let string v =
-    match v with
-      `String v -> v
-    | _         -> assert false
-  let list v =
-    match v with
-      `List l -> l
-    | _       -> assert false
-  let option f v =
-    match v with
-      `Null -> None
-    | _     -> Some (f v)
-  let int v =
-    match v with
-      `Int i -> i
-    | _      -> assert false
-end
-
 module Param = struct
   let string k v rem =
     match v with

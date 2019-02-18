@@ -19,12 +19,12 @@ let http_get host path =
 
 let parse_credentials credentials creds =
   let creds = Yojson.Safe.from_string creds in
-  let open Aws_base.Json in
-  let access_key_id = string @@ field "AccessKeyId" creds in
-  let secret_access_key = string @@ field "SecretAccessKey" creds in
-  let session_token = string @@ field "Token" creds in
+  let open Yojson.Safe.Util in
+  let access_key_id = to_string @@ member "AccessKeyId" creds in
+  let secret_access_key = to_string @@ member "SecretAccessKey" creds in
+  let session_token = to_string @@ member "Token" creds in
   let expiration =
-    Aws_base.(from_ISO8601 @@ string @@ field "Expiration" creds) in
+    Aws_base.(from_ISO8601 @@ to_string @@ member "Expiration" creds) in
   credentials.Aws_common.access_key_id <- access_key_id;
   credentials.Aws_common.secret_access_key <- secret_access_key;
   credentials.Aws_common.session_token <- Some session_token;

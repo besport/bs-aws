@@ -38,14 +38,6 @@ module Xml : sig
   val record : Xmlm.input -> (string * string) list
 end
 
-module Json : sig
-  val field : string -> Yojson.Safe.json -> Yojson.Safe.json
-  val option : (Yojson.Safe.json -> 'a) -> Yojson.Safe.json -> 'a option
-  val list : Yojson.Safe.json -> Yojson.Safe.json list
-  val string : Yojson.Safe.json -> string
-  val int : Yojson.Safe.json -> int
-end
-
 module Param : sig
   val string :
     string -> string option ->
