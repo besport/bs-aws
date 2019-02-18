@@ -65,7 +65,7 @@ let perform ~credentials ~service ~region
   end;
   match code with
   | `OK | `Created | `No_content ->
-    Lwt.return body
+    Lwt.return (body, headers)
   | _ ->
     let error =
       {Aws_common.request_id = "";  (*XXX*)

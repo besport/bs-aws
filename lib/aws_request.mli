@@ -10,4 +10,4 @@ val perform :
   ?query:(string * string) list ->
   ?headers:(string * string) list ->
   ?payload:string ->
-  unit -> string Lwt.t
+  unit -> (string * Cohttp.Header.t) Lwt.t

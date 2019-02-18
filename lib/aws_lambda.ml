@@ -2,6 +2,8 @@
 let endpoint region =
   Format.sprintf "lambda.%s.amazonaws.com" (Aws_common.Region.to_string region)
 
+type error = Handled of string | Unhandled
+
 let invoke
     ~credentials ~region ?client_context ?invocation_type ?log_type ?qualifier
     ?payload ~function_name () =
@@ -33,6 +35,14 @@ let invoke
     | None         -> None
     | Some payload -> Some (Yojson.Safe.to_string payload)
   in
-  Aws_request.perform
-    ~credentials ~service:"lambda" ~region ~meth:`POST
-    ~host:(endpoint region) ~uri ~query ~headers ?payload ()
+  let%lwt (res, headers) =
+    Aws_request.perform
+      ~credentials ~service:"lambda" ~region ~meth:`POST
+      ~host:(endpoint region) ~uri ~query ~headers ?payload ()
+  in
+  Lwt.return @@
+  match Cohttp.Header.get headers "x-amz-function-error" with
+  | Some "Unhandled" -> Error Unhandled
+  | Some "Handled"   -> Error (Handled res)
+  | Some _           -> assert false
+  | None             -> Ok res

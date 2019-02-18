@@ -36,7 +36,7 @@ let create_queue ~credentials ~region
   in
   let parameters =
     init_params "CreateQueue" "QueueName" queue_name @ attributes in
-  let%lwt res =
+  let%lwt (res, _) =
     Aws_request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
@@ -140,7 +140,7 @@ let get_queue_attributes ~credentials ~region
     List.mapi (fun i nm -> (Printf.sprintf "AttributeName.%d" (i + 1), nm))
       attributes
   in
-  let%lwt res =
+  let%lwt (res, _) =
     Aws_request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
@@ -187,7 +187,7 @@ let receive_message ~credentials ~region
     |> int "VisibilityTimeout" visibility_timeout
     |> int "WaitTimeSeconds" wait_time_seconds
   in
-  let%lwt res =
+  let%lwt (res, _) =
     Aws_request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()

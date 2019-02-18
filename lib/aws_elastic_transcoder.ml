@@ -111,7 +111,7 @@ module Job = struct
     in
     Aws_request.perform ~credentials ~service:"elastictranscoder" ~region
       ~meth:`POST ~host:(endpoint region) ~uri:"/2012-09-25/jobs" ~payload ()
-      >>= fun res ->
+      >>= fun (res, _) ->
     let res = Yojson.Safe.from_string res in
     Lwt.return Yojson.Safe.Util.(to_string (member "Id" (member "Job" res)))
 
@@ -129,7 +129,7 @@ module Job = struct
   let read ~credentials ~region ~id () =
     Aws_request.perform ~credentials ~service:"elastictranscoder" ~region
       ~meth:`GET ~host:(endpoint region) ~uri:("/2012-09-25/jobs/" ^ id) ()
-    >>= fun res ->
+    >>= fun (res, _) ->
   let res = Yojson.Safe.from_string res in
   let open Yojson.Safe.Util in
   let job = member "Job" res in

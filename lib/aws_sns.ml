@@ -83,7 +83,7 @@ let subscribe ~credentials ~region ~endpoint ~protocol ~topic_arn () =
      | `lambda -> "lambda") ::
     init_params "Subscribe" "TopicArn" topic_arn
   in
-  let%lwt res =
+  let%lwt (res, _) =
     Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
       ~host:(sns_endpoint region) ~uri:"/" ~query () in
   let i = decode_response res in
@@ -96,7 +96,7 @@ let unsubscribe ~credentials ~region ~subscription_arn () =
   let query =
     init_params "Unsubscribe" "SubscriptionArn" subscription_arn
   in
-  let%lwt res =
+  let%lwt (res, _) =
     Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
       ~host:(sns_endpoint region) ~uri:"/" ~query () in
   Lwt.return ()
