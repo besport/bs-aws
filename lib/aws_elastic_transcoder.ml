@@ -6,7 +6,7 @@ let endpoint (region : Aws_common.Region.t) =
     (Aws_common.Region.to_string region)
 
 module Job = struct
-  type 'a parameters = Yojson.Safe.json
+  type 'a parameters = Yojson.Safe.t
 
   type input_encryption = [`AES_CBC_PKCS7 | `AES_CTR | `AES_GCM]
   type output_encryption = [input_encryption | `AES_GCM | `S3 | `S3_AWS_KMS ]

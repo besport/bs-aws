@@ -3,9 +3,9 @@ val create_queue :
   ?delay_seconds:int ->
   ?maximum_message_size:int ->
   ?message_retention_period:int ->
-  ?policy:Yojson.Safe.json ->
+  ?policy:Yojson.Safe.t ->
   ?receive_message_wait_time_seconds:int ->
-  ?redrive_policy:Yojson.Safe.json ->
+  ?redrive_policy:Yojson.Safe.t ->
   ?visibility_timeout:int ->
   ?fifo_queue:bool ->
   ?content_based_deduplication:bool ->
@@ -16,9 +16,9 @@ val set_queue_attributes :
   ?delay_seconds:int ->
   ?maximum_message_size:int ->
   ?message_retention_period:int ->
-  ?policy:Yojson.Safe.json ->
+  ?policy:Yojson.Safe.t ->
   ?receive_message_wait_time_seconds:int ->
-  ?redrive_policy:Yojson.Safe.json ->
+  ?redrive_policy:Yojson.Safe.t ->
   ?visibility_timeout:int ->
   ?content_based_deduplication:bool ->
   queue_url:string -> unit -> unit Lwt.t
@@ -52,10 +52,10 @@ module Attribute : sig
     val last_modified_timestamp : float t
     val maximum_message_size : int t
     val message_retention_period : int t
-    val policy : Yojson.Safe.json t
+    val policy : Yojson.Safe.t t
     val queue_arn : string t
     val receive_message_wait_time_seconds : int t
-    val redrive_policy : Yojson.Safe.json t
+    val redrive_policy : Yojson.Safe.t t
     val visibility_timeout : int t
     val fifo_queue : bool t
     val content_based_deduplication : bool t

@@ -32,7 +32,7 @@ val unsubscribe :
 
 val set_subscription_attributes :
   credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
-  attribute:[ `Delivery_policy of Yojson.Safe.json
+  attribute:[ `Delivery_policy of Yojson.Safe.t
             | `Raw_message_delivery of bool ] ->
   subscription_arn:string -> unit ->
   unit Lwt.t
