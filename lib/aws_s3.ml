@@ -140,9 +140,12 @@ let hash str = ("x-amz-content-sha256", Aws_signature.hash str)
 let request
     ~credentials ~region ?secure ~meth ?(host = hostname region) ~uri
     ?query ?(headers = []) ?(payload = "") ?(hash = hash payload) () =
-  Aws_request.perform
-    ~credentials ~service:"s3" ~region ?secure ~meth ~host ~uri
-    ?query ~headers:(hash :: headers) ~payload ()
+  let%lwt (res, _) =
+    Aws_request.perform
+      ~credentials ~service:"s3" ~region ?secure ~meth ~host ~uri
+      ?query ~headers:(hash :: headers) ~payload ()
+  in
+  Lwt.return res
 
 
 let list ~credentials ~region () =

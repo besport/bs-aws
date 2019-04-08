@@ -51,7 +51,7 @@ let describe_db_instances ~credentials ~region ?db_instance_identifier () =
     init_params "DescribeDBInstances"
     |> Aws_base.Param.string "DBInstanceIdentifier" db_instance_identifier
   in
-  let%lwt res =
+  let%lwt (res, _) =
     Aws_request.perform
       ~credentials ~service:"rds" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query ()

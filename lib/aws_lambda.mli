@@ -1,4 +1,6 @@
 
+type error = Handled of string | Unhandled
+
 val invoke :
   credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
   ?client_context:Yojson.Safe.t ->
@@ -6,4 +8,4 @@ val invoke :
   ?log_type:[ `None | `Tail ] ->
   ?qualifier:string ->
   ?payload:Yojson.Safe.t ->
-  function_name:string -> unit -> string Lwt.t
+  function_name:string -> unit -> (string, error) result Lwt.t
