@@ -39,6 +39,7 @@ module Bucket : sig
   val list :
     credentials:Aws_common.credentials ->
     region:Aws_common.Region.t ->
+    ?prefix:string ->
     string ->
     string Lwt.t
 end

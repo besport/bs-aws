@@ -1,6 +1,6 @@
 OASISFormat:            0.4
 Name:                   bs-aws
-Version:                0.5
+Version:                0.6
 Synopsis:               collection of functions around Amazon Web Services
 Description:            this is not nearly a complete implementation of the AWS API and is not actively developed
 Authors:                Jerôme Vouillon, Jan Rochel
@@ -18,7 +18,7 @@ Library "bs-aws"
   InternalModules:      Aws_base, Aws_request, Aws_signature
   Modules:              Aws_common, Aws_elastic_transcoder, Aws_lambda,
                         Aws_s3, Aws_sns, Aws_sqs, Aws_ses, Aws_rds,
-                        Aws_credentials
+                        Aws_credentials, Aws_mediaconvert
 
 SourceRepository master
   Type:       git

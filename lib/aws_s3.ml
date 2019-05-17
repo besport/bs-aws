@@ -152,12 +152,32 @@ let list ~credentials ~region () =
   request ~credentials ~region ~meth:`GET ~uri:"/" ()
 
 module Bucket = struct
-  let list ~credentials ~region bucket =
-    request ~credentials ~region ~meth:`GET
-    (*~headers:[("list-type", "2")]*) (*does not work with it*)
-    ~uri:("/" ^ bucket)
-    ()
+  let list ~credentials ~region ?prefix bucket =
+    let query =
+      let open Aws_base.Param in
+      [("list-type", "2")]
+      |> string "prefix" prefix
+    in
+    request ~credentials ~region ~meth:`GET ~query ~uri:("/" ^ bucket) ()
 end
+
+(*
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Name>besport-video</Name>
+  <Prefix>test/2.</Prefix>
+  <KeyCount>4</KeyCount>
+  <MaxKeys>1000</MaxKeys>
+  <IsTruncated>false</IsTruncated>
+  <Contents>
+      <Key>test/2.0000000.jpg</Key>
+      <LastModified>2019-05-17T14:47:19.000Z</LastModified>
+      <ETag>&quot;f8e83db0cab3bbb152c53ffbea59bb1f&quot;</ETag>
+      <Size>33263</Size>
+      <StorageClass>STANDARD</StorageClass>
+  </Contents>
+  <Contents><Key>test/2.0000001.jpg</Key><LastModified>2019-05-17T14:47:23.000Z</LastModified><ETag>&quot;0f8f40e6e8b198485afdac34d7539490&quot;</ETag><Size>81507</Size><StorageClass>STANDARD</StorageClass></Contents><Contents><Key>test/2.m3u8</Key><LastModified>2019-05-17T14:49:10.000Z</LastModified><ETag>&quot;c64d3afb1c1299a61df186f0db43a409&quot;</ETag><Size>2650</Size><StorageClass>STANDARD</StorageClass></Contents><Contents><Key>test/2.mpd</Key><LastModified>2019-05-17T14:49:10.000Z</LastModified><ETag>&quot;7ebcc59227036f94446945d52995b181&quot;</ETag><Size>3085</Size><StorageClass>STANDARD</StorageClass></Contents>
+</ListBucketResult>
+*)
 
 module Object = struct
   let delete ~credentials ~region ~bucket object_name =
