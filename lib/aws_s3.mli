@@ -36,12 +36,17 @@ val list :
   string Lwt.t
 
 module Bucket : sig
+  type contents = { key : string }
+  type list_result =
+    { is_truncated : bool;
+      contents : contents list }
+
   val list :
     credentials:Aws_common.credentials ->
     region:Aws_common.Region.t ->
     ?prefix:string ->
     string ->
-    string Lwt.t
+    list_result Lwt.t
 end
 
 module Object : sig
