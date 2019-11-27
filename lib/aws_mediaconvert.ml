@@ -18,7 +18,7 @@ let describe_endpoints
             | `GET_ONLY -> "GET_ONLY")
          mode
   in
-  let%lwt (res, headers) =
+  let%lwt (res, _) =
     Aws_request.perform
       ~credentials ~service:"mediaconvert" ~region ~meth:`POST
       ~host:(endpoint region) ~uri ~query ()
@@ -140,7 +140,7 @@ let create_job ~credentials ~region ~endpoint
       status_update_interval
   in
   let payload = Yojson.Safe.to_string (`Assoc payload) in
-  let%lwt (res, headers) =
+  let%lwt (res, _) =
     Aws_request.perform
       ~credentials ~service:"mediaconvert" ~region ~meth:`POST
       ~host:(endpoint_host endpoint) ~uri ~payload ()
@@ -149,7 +149,7 @@ let create_job ~credentials ~region ~endpoint
 
 let get_job ~credentials ~region ~endpoint ~id () =
   let uri = Printf.sprintf "/2017-08-29/jobs/" ^ id in
-  let%lwt (res, headers) =
+  let%lwt (res, _) =
     Aws_request.perform
       ~credentials ~service:"mediaconvert" ~region ~meth:`GET
       ~host:(endpoint_host endpoint) ~uri ()

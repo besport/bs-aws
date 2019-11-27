@@ -107,7 +107,6 @@ let timegm =
   let days =
     [|0; 31; 59; 90; 120; 151; 181; 212; 243; 273; 304; 334|] in
   fun year mon mday hour min sec ->
-    let open Unix in
     let r = (year - 1970) * 365 + days.(mon - 1) in
     let r = r + (year - 1968) / 4 in
     let r = r - (year - 1900) / 100 in

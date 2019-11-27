@@ -5,7 +5,7 @@ let (>>=) = Lwt.bind
 let encode_post_query req =
   match req with
   | {Aws_base.meth = `POST;
-     query = (_ :: _) as query; payload = ""; headers} ->
+     query = (_ :: _) as query; payload = ""; headers; _} ->
       {req with
        Aws_base.headers =
          ("content-type", "application/x-www-form-urlencoded") :: headers;
@@ -18,7 +18,7 @@ let encode_post_query req =
                    (Aws_base.encode_form_string f)
                    (Aws_base.encode_form_string v))
               query)}
-  | {Aws_base.meth = `POST; query = _ :: _} ->
+  | {Aws_base.meth = `POST; query = _ :: _; _} ->
       assert false
   | _ ->
       req

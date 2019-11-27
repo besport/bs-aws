@@ -1,5 +1,4 @@
 _build
-setup.data
-setup.log
-
+bs-aws.install
+.merlin
 *~
