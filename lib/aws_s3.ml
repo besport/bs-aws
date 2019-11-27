@@ -127,7 +127,7 @@ let object_url ?secure ~credentials ~region ~bucket ~expiration ~key
     add "response-content-encoding" response_content_encoding @@
     []
   in
-  let {Aws_base.uri; query; headers } =
+  let {Aws_base.uri; query; _ } =
     Aws_base.request ~meth:`GET ?secure ~host ~uri ~query ()
     |> Aws_signature.sign_request_using_query_parameters
       credentials ~service:"s3" region ~expiration ~unsigned_payload:true

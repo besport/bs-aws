@@ -69,7 +69,7 @@ let authorization_header key signed_headers signature =
     key.credential signed_headers signature
 
 let sign_request credentials ~service region req =
-  let {Aws_base.meth; uri; query; headers; payload} = req in
+  let {Aws_base.meth; uri; query; headers; payload; _} = req in
   let date = Aws_base.to_ISO8601 (Unix.gettimeofday ()) in
   let headers = ("x-amz-date", date) :: headers in
   let headers =
@@ -89,7 +89,7 @@ let sign_request credentials ~service region req =
 
 let sign_request_using_query_parameters
     credentials ~service region ~expiration ?unsigned_payload req =
-  let {Aws_base.meth; uri; query; headers; payload} = req in
+  let {Aws_base.meth; uri; query; headers; payload; _} = req in
   let date = Aws_base.to_ISO8601 (Unix.gettimeofday ()) in
   let key = signing_key credentials date region service in
   let (_, signed_headers) =
@@ -107,7 +107,7 @@ let sign_request_using_query_parameters
     | Some token -> ("X-Amz-Security-Token", token) :: query
     | None       -> query
   in
-  let (creq, signed_headers) =
+  let (creq, _) =
     canonical_request meth uri query headers ?unsigned_payload payload in
   if debug () then Format.eprintf "Canonical request:@.%s@." creq;
   let sts = string_to_sign date key creq in
