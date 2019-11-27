@@ -11,32 +11,17 @@ homepage: "https://github.com/besport/bs-aws"
 dev-repo: "git+https://github.com/besport/bs-aws.git"
 bug-reports: "https://github.com/besport/bs-aws/issues"
 build: [
-  ["oasis" "setup"]
-  ["ocaml" "setup.ml" "-configure" "--prefix" prefix]
-  ["ocaml" "setup.ml" "-build"]
-  ["oasis" "setup"] {with-test}
-  ["ocaml" "setup.ml" "-configure" "--enable-tests"] {with-test}
-  ["ocaml" "setup.ml" "-build"] {with-test}
-  ["ocaml" "setup.ml" "-test"] {with-test}
-]
-install: ["ocaml" "setup.ml" "-install"]
-remove: [
-  ["ocamlfind" "remove" "bs-aws"]
+  ["dune" "build" "-p" name "-j" jobs]
 ]
 depends: [
   "ocaml" {>= "4.01"}
-  "base-threads"
   "base64" {>= "3.0.0"}
   "cryptokit"
   "lwt"
   "lwt_ppx"
-  "oasis" {build & >= "0.4"}
-  "ocamlbuild" {build}
   "ocamlfind" {build}
   "cohttp-lwt-unix" {>= "1.0"}
-  "re"
   "yojson" {>= "1.6"}
   "xmlm"
   "ezxmlm"
 ]
-flags: light-uninstall

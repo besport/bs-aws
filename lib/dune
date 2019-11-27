@@ -1,0 +1,7 @@
+(library
+ (name bs_aws)
+ (public_name bs-aws)
+ (wrapped false)
+ (libraries lwt xmlm yojson uri cryptokit base64 cohttp-lwt-unix ezxmlm)
+ (preprocess (pps lwt_ppx))
+ (private_modules aws_base aws_request aws_signature))
