@@ -28,14 +28,8 @@ module String_map = Map.Make(struct
     let compare = compare
   end)
 
-let perform ~credentials ~service ~region
-      ?secure ~meth ~host ~uri ?query ?headers ?payload () =
-  let {Aws_base.secure; meth; uri; query; headers; payload } as req =
-    Aws_base.request ?secure ~meth ~host ~uri ?query ?headers ?payload ()
-    |> encode_post_query
-    |> Aws_signature.sign_request credentials ~service region
-  in
-  if debug () then Aws_base.print_curl_request req;
+let simple_perform ~secure ~meth ~host ?port ~uri
+                   ?(query = []) ?(headers = []) ?(payload = "") () =
   let headers =
     List.fold_left
       (fun acc (id, v) -> Cohttp.Header.add acc id v)
@@ -47,7 +41,7 @@ let perform ~credentials ~service ~region
     | `GET  | `DELETE | `HEAD -> None
   and uri =
     Uri.make ()
-      ~scheme:(if secure then "https" else "http")
+      ~scheme:(if secure then "https" else "http") ?port
       ~host ~path:uri ~query:(List.map (fun (k, v) -> (k, [v])) query)
   in
   Cohttp_lwt_unix.Client.call ~chunked:false ~headers ?body
@@ -75,19 +69,52 @@ let perform ~credentials ~service ~region
     in
     Lwt.fail (Aws_common.Error error)
 
-module type SERVICE = sig
+let perform ~credentials ~service ~region
+      ?secure ~meth ~host ?port ~uri ?query ?headers ?payload () =
+  let {Aws_base.secure; meth; uri; query; headers; payload } as req =
+    Aws_base.request ?secure ~meth ~host ~uri ?query ?headers ?payload ()
+    |> encode_post_query
+    |> Aws_signature.sign_request credentials ~service region
+  in
+  if debug () then Aws_base.print_curl_request req;
+  simple_perform
+    ~secure ~meth ~host ?port ~uri ~query ~headers ~payload ()
+
+module type CONF = sig
   val credentials : Aws_common.credentials
   val service : string
-  val region : [< Aws_common.Region.t]
+  val region : Aws_common.Region.t
   val secure : bool option
   val host : string
 end
 
-module Service (Conf : SERVICE) = struct
+module type NO_AWS_CONF = sig
+  val secure : bool
+  val host : string
+  val port : int option
+end
+
+module type SERVICE = sig
+  val perform :
+    meth:Aws_base.meth ->
+    uri:string ->
+    ?query:(string * string) list ->
+    ?headers:(string * string) list ->
+    ?payload:string ->
+    unit -> (string * Cohttp.Header.t) Lwt.t
+end
+
+module Service (Conf : CONF) = struct
   let perform ~meth ~uri ?query ?headers ?payload () =
     perform
       ~credentials:Conf.credentials ~service:Conf.service ~region:Conf.region
       ?secure:Conf.secure ~meth ~host:Conf.host ~uri ?query ?headers ?payload ()
+end
+
+module NoAws (Conf : NO_AWS_CONF) = struct
+  let perform ~meth ~uri ?query ?headers ?payload () =
+    simple_perform ~secure:Conf.secure ~meth ~host:Conf.host
+                   ?port:Conf.port ~uri ?query ?headers ?payload ()
 end
 
 (* XXX
