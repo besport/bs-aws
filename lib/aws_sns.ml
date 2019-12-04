@@ -96,7 +96,7 @@ let unsubscribe ~credentials ~region ~subscription_arn () =
   let query =
     init_params "Unsubscribe" "SubscriptionArn" subscription_arn
   in
-  let%lwt (res, _) =
+  let%lwt _ =
     Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
       ~host:(sns_endpoint region) ~uri:"/" ~query () in
   Lwt.return ()

@@ -74,10 +74,9 @@ let send_email ~credentials ~region ?configuration_set_name ~destination
     |> Aws_base.Param.string "SourceArn" source_arn
     |> list message_tag "Tags" tags
   in
-  let%lwt res =
+  let%lwt _ =
     Aws_request.perform
       ~credentials ~service:"ses" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
-  (*XXX*)
   Lwt.return ()

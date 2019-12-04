@@ -2,13 +2,6 @@
 let endpoint region =
   Format.sprintf "rds.%s.amazonaws.com" (Aws_common.Region.to_string region)
 
-let decode_response res =
-  let i = Xmlm.make_input (`String (0, res)) in
-  ignore (Xmlm.input i); (* DTD *)
-  ignore (Xmlm.input i); (* *Response *)
-  ignore (Xmlm.input i); (* *Result *)
-  i
-
 let init_params act = ["Version", "2014-10-31"; "Action", act]
 
 type endpoint =
