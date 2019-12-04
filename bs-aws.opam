@@ -13,15 +13,12 @@ bug-reports: "https://github.com/besport/bs-aws/issues"
 build: [["dune" "build" "-p" name "-j" jobs]]
 depends: [
   "ocaml" {>= "4.01"}
-  "base-threads"
   "base64" {>= "3.0.0"}
   "cryptokit"
   "lwt"
   "lwt_ppx"
-  "ocamlbuild" {build}
   "ocamlfind" {build}
   "cohttp-lwt-unix" {>= "1.0"}
-  "re"
   "yojson" {>= "1.6"}
   "xmlm"
   "ezxmlm"
