@@ -107,7 +107,7 @@ let sign_request_using_query_parameters
     | Some token -> ("X-Amz-Security-Token", token) :: query
     | None       -> query
   in
-  let (creq, signed_headers) =
+  let creq, _ =
     canonical_request meth uri query headers ?unsigned_payload payload in
   if debug () then Format.eprintf "Canonical request:@.%s@." creq;
   let sts = string_to_sign date key creq in

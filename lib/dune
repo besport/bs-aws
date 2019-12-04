@@ -1,0 +1,7 @@
+(library
+ (name bs_aws)
+ (public_name bs-aws)
+ (libraries lwt lwt_ppx cohttp-lwt-unix xmlm ezxmlm yojson cryptokit)
+ (preprocess (pps lwt_ppx))
+ (modules Aws_base Aws_credentials Aws_lambda Aws_rds Aws_s3 Aws_signature Aws_sqs Aws_common Aws_elastic_transcoder Aws_mediaconvert Aws_request Aws_ses Aws_sns)
+)
