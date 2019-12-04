@@ -75,6 +75,21 @@ let perform ~credentials ~service ~region
     in
     Lwt.fail (Aws_common.Error error)
 
+module type SERVICE = sig
+  val credentials : Aws_common.credentials
+  val service : string
+  val region : [< Aws_common.Region.t]
+  val secure : bool option
+  val host : string
+end
+
+module Service (Conf : SERVICE) = struct
+  let perform ~meth ~uri ?query ?headers ?payload () =
+    perform
+      ~credentials:Conf.credentials ~service:Conf.service ~region:Conf.region
+      ?secure:Conf.secure ~meth ~host:Conf.host ~uri ?query ?headers ?payload ()
+end
+
 (* XXX
 - crash if cannot connect!
 
