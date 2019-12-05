@@ -23,6 +23,8 @@ val subscribe :
   protocol:[ `application | `email | `email_json |
              `http | `https | `lambda | `sms | `sqs ] ->
   topic_arn:string ->
+  ?attributes:[ `Delivery_policy of Yojson.Safe.t
+              | `Raw_message_delivery of bool ] list ->
   unit -> string Lwt.t
 
 val unsubscribe :

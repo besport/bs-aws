@@ -68,8 +68,20 @@ let publish ~credentials ~region ~topic ~message ?(message_attributes = []) () =
   Lwt.return ()
   (*TODO: parse XML response*)
 
-let subscribe ~credentials ~region ~endpoint ~protocol ~topic_arn () =
+let subscribe
+      ~credentials ~region ~endpoint ~protocol ~topic_arn ?(attributes = []) () =
   let query =
+    let attribute prefix attr rem =
+      (prefix ^ ".key",
+       match attr with
+         `Delivery_policy _      -> "DeliveryPolicy"
+       | `Raw_message_delivery _ -> "RawMessageDelivery") ::
+        (prefix ^ ".value",
+         match attr with
+           `Delivery_policy p      -> Yojson.Safe.to_string p
+         | `Raw_message_delivery b -> string_of_bool b) ::
+          rem
+    in
     ("Endpoint", endpoint) ::
     ("Protocol",
      match protocol with
@@ -81,7 +93,8 @@ let subscribe ~credentials ~region ~endpoint ~protocol ~topic_arn () =
      | `sqs -> "sqs"
      | `application -> "application"
      | `lambda -> "lambda") ::
-    init_params "Subscribe" "TopicArn" topic_arn
+    (list attribute "Attributes" attributes @@
+    init_params "Subscribe" "TopicArn" topic_arn)
   in
   let%lwt (res, _) =
     Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
