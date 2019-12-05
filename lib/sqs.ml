@@ -1,6 +1,6 @@
 
 let endpoint region =
-  Format.sprintf "sqs.%s.amazonaws.com" (Aws_common.Region.to_string region)
+  Format.sprintf "sqs.%s.amazonaws.com" (Common.Region.to_string region)
 
 let decode_response res =
   let i = Xmlm.make_input (`String (0, res)) in
@@ -17,7 +17,7 @@ let create_queue ~credentials ~region
     ?visibility_timeout ?fifo_queue ?content_based_deduplication
     ~queue_name () =
   let attributes =
-    let open Aws_base.Param in
+    let open Base.Param in
     []
     |> custom "Policy" Yojson.Safe.to_string policy
     |> int "VisibilityTimeout" visibility_timeout
@@ -37,7 +37,7 @@ let create_queue ~credentials ~region
   let parameters =
     init_params "CreateQueue" "QueueName" queue_name @ attributes in
   let%lwt (res, _) =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
@@ -53,7 +53,7 @@ let set_queue_attributes ~credentials ~region
     ?visibility_timeout ?content_based_deduplication
     ~queue_url () =
   let attributes =
-    let open Aws_base.Param in
+    let open Base.Param in
     []
     |> custom "Policy" Yojson.Safe.to_string policy
     |> int "VisibilityTimeout" visibility_timeout
@@ -72,7 +72,7 @@ let set_queue_attributes ~credentials ~region
   let parameters =
     init_params "SetQueueAttributes" "QueueUrl" queue_url @ attributes in
   let%lwt _ =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
@@ -141,19 +141,19 @@ let get_queue_attributes ~credentials ~region
       attributes
   in
   let%lwt (res, _) =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
   Lwt.return
-    (res |> decode_response |> Aws_base.Xml.(repeat (element record))
+    (res |> decode_response |> Base.Xml.(repeat (element record))
      |> List.map
           (fun (_, r) -> (List.assoc "Name" r, List.assoc "Value" r)))
 
 let delete_queue ~credentials ~region ~queue_url () =
   let parameters = init_params "DeleteQueue" "QueueUrl" queue_url in
   let%lwt _ =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
@@ -165,7 +165,7 @@ let send_message ~credentials ~region ~queue_url ~message_body () =
     init_params "SendMessage" "QueueUrl" queue_url
   in
   let%lwt _ =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
@@ -181,19 +181,19 @@ let receive_message ~credentials ~region
     ?max_number_of_messages ?visibility_timeout ?wait_time_seconds
     ~queue_url () =
   let parameters =
-    let open Aws_base.Param in
+    let open Base.Param in
     init_params "ReceiveMessage" "QueueUrl" queue_url
     |> int "MaxNumberOfMessages" max_number_of_messages
     |> int "VisibilityTimeout" visibility_timeout
     |> int "WaitTimeSeconds" wait_time_seconds
   in
   let%lwt (res, _) =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in
   Lwt.return
-    (res |> decode_response |> Aws_base.Xml.(repeat (element record))
+    (res |> decode_response |> Base.Xml.(repeat (element record))
      |> List.map
           (fun (_, r) ->
              { message_id = List.assoc "MessageId" r;
@@ -206,7 +206,7 @@ let delete_message ~credentials ~region ~queue_url ~receipt_handle () =
     init_params "DeleteMessage" "QueueUrl" queue_url
   in
   let%lwt _ =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"sqs" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in

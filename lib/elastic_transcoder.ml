@@ -1,9 +1,9 @@
 
 let (>>=) = Lwt.bind
 
-let endpoint (region : Aws_common.Region.t) =
+let endpoint (region : Common.Region.t) =
   Printf.sprintf "elastictranscoder.%s.amazonaws.com"
-    (Aws_common.Region.to_string region)
+    (Common.Region.to_string region)
 
 module Job = struct
   type 'a parameters = Yojson.Safe.t
@@ -109,7 +109,7 @@ module Job = struct
       let p = `Assoc a in
       Yojson.Safe.to_string p
     in
-    Aws_request.perform ~credentials ~service:"elastictranscoder" ~region
+    Request.perform ~credentials ~service:"elastictranscoder" ~region
       ~meth:`POST ~host:(endpoint region) ~uri:"/2012-09-25/jobs" ~payload ()
       >>= fun (res, _) ->
     let res = Yojson.Safe.from_string res in
@@ -127,7 +127,7 @@ module Job = struct
       outputs : output list }
 
   let read ~credentials ~region ~id () =
-    Aws_request.perform ~credentials ~service:"elastictranscoder" ~region
+    Request.perform ~credentials ~service:"elastictranscoder" ~region
       ~meth:`GET ~host:(endpoint region) ~uri:("/2012-09-25/jobs/" ^ id) ()
     >>= fun (res, _) ->
   let res = Yojson.Safe.from_string res in

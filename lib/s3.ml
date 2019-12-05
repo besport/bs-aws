@@ -2,21 +2,21 @@
 XXX Non-ascii characters in JSON policy should be escaped...
 *)
 
-let debug = Aws_base.Debug.make "s3" "Debug S3 API." ["all"]
+let debug = Base.Debug.make "s3" "Debug S3 API." ["all"]
 
-type bucket = { region : Aws_common.Region.t; name : string }
+type bucket = { region : Common.Region.t; name : string }
 
 let bucket region name = { region; name }
 
 let bucket_url ?(secure=true) region bucket =
-  let region = Aws_common.Region.to_string region in
+  let region = Common.Region.to_string region in
   if secure then
     Format.sprintf "https://%s.s3-%s.amazonaws.com/" bucket.name region
   else
     Format.sprintf "http://%s.s3-%s.amazonaws.com/" bucket.name region
 
 let hostname region =
-  Format.sprintf "s3-%s.amazonaws.com" (Aws_common.Region.to_string region)
+  Format.sprintf "s3-%s.amazonaws.com" (Common.Region.to_string region)
 
 let bucket_host region bucket = Format.sprintf "%s.%s" bucket (hostname region)
 
@@ -40,19 +40,19 @@ let form ?secure ~credentials ~region ~bucket
       `Delay d -> date +. d
     | `Date d -> d
   in
-  let date = Aws_base.to_ISO8601 date in
-  let skey = Aws_signature.signing_key credentials date bucket.region "s3" in
+  let date = Base.to_ISO8601 date in
+  let skey = Signature.signing_key credentials date bucket.region "s3" in
   let cond c = match c with `Eq _ as c -> c | `Prefix (p, _) -> `Prefix p in
   let value c = match c with `Eq v -> v | `Prefix (_, v) -> v in
   let conditions =
     [exact_match "bucket" bucket.name;
      exact_match "x-amz-date" date;
      exact_match "x-amz-algorithm" "AWS4-HMAC-SHA256";
-     exact_match "x-amz-credential" (Aws_signature.credential skey);
+     exact_match "x-amz-credential" (Signature.credential skey);
      condition "key" (cond key)]
   in
   let conditions =
-    match credentials.Aws_common.session_token with
+    match credentials.Common.session_token with
     | Some token -> exact_match "x-amz-security-token" token :: conditions
     | None       -> conditions
   in
@@ -80,7 +80,7 @@ let form ?secure ~credentials ~region ~bucket
       (fun rem (f, v) -> condition f v :: rem) conditions other_fields in
   let policy =
     `Assoc ["expiration",
-            `String (Aws_base.to_ISO8601 ~extended:true expiration);
+            `String (Base.to_ISO8601 ~extended:true expiration);
             "conditions", `List conditions]
     |> Yojson.Safe.to_string
   in
@@ -89,13 +89,13 @@ let form ?secure ~credentials ~region ~bucket
   let fields =
     ["policy", policy;
      "x-amz-algorithm", "AWS4-HMAC-SHA256";
-     "x-amz-credential", Aws_signature.credential skey;
+     "x-amz-credential", Signature.credential skey;
      "x-amz-date", date;
-     "x-amz-signature", Aws_signature.sign skey policy;
+     "x-amz-signature", Signature.sign skey policy;
      "key", value key]
   in
   let fields =
-    match credentials.Aws_common.session_token with
+    match credentials.Common.session_token with
     | Some token -> ("x-amz-security-token", token) :: fields
     | None       -> fields
   in
@@ -127,21 +127,21 @@ let object_url ?secure ~credentials ~region ~bucket ~expiration ~key
     add "response-content-encoding" response_content_encoding @@
     []
   in
-  let {Aws_base.uri; query } =
-    Aws_base.request ~meth:`GET ?secure ~host ~uri ~query ()
-    |> Aws_signature.sign_request_using_query_parameters
+  let {Base.uri; query } =
+    Base.request ~meth:`GET ?secure ~host ~uri ~query ()
+    |> Signature.sign_request_using_query_parameters
       credentials ~service:"s3" region ~expiration ~unsigned_payload:true
   in
   Uri.make ~scheme:"https" ~host ~path:uri
     ~query:(List.map (fun (k, v) -> (k, [v])) query) ()
 
-let hash str = ("x-amz-content-sha256", Aws_signature.hash str)
+let hash str = ("x-amz-content-sha256", Signature.hash str)
 
 let request
     ~credentials ~region ?secure ~meth ?(host = hostname region) ~uri
     ?query ?(headers = []) ?(payload = "") ?(hash = hash payload) () =
   let%lwt (res, _) =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"s3" ~region ?secure ~meth ~host ~uri
       ?query ~headers:(hash :: headers) ~payload ()
   in
@@ -159,7 +159,7 @@ module Bucket = struct
 
   let list ~credentials ~region ?prefix bucket =
     let query =
-      let open Aws_base.Param in
+      let open Base.Param in
       [("list-type", "2")]
       |> string "prefix" prefix
     in

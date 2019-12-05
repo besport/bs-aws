@@ -1,6 +1,6 @@
 
 let endpoint region =
-  Printf.sprintf "email.%s.amazonaws.com" (Aws_common.Region.to_string region)
+  Printf.sprintf "email.%s.amazonaws.com" (Common.Region.to_string region)
 
 type content = { charset : string option; data : string }
 
@@ -33,7 +33,7 @@ let list fmt prefix l rem =
 
 let add_content prefix content rem =
   string (prefix ^ ".Data") content.data @@
-  Aws_base.Param.string (prefix ^ ".Charset") content.charset @@
+  Base.Param.string (prefix ^ ".Charset") content.charset @@
   rem
 
 let add_body prefix body rem =
@@ -64,18 +64,18 @@ let send_email ~credentials ~region ?configuration_set_name ~destination
     ~source ?source_arn ?(tags = []) () =
   let parameters =
     action "SendEmail"
-    |> Aws_base.Param.string "ConfigurationSetName" configuration_set_name
+    |> Base.Param.string "ConfigurationSetName" configuration_set_name
     |> add_destination "Destination" destination
     |> add_message "Message" message
     |> list string "ReplyToAddresses" reply_to_addresses
-    |> Aws_base.Param.string "ReturnPath" return_path
-    |> Aws_base.Param.string "ReturnPathArn" return_path_arn
+    |> Base.Param.string "ReturnPath" return_path
+    |> Base.Param.string "ReturnPathArn" return_path_arn
     |> string "Source" source
-    |> Aws_base.Param.string "SourceArn" source_arn
+    |> Base.Param.string "SourceArn" source_arn
     |> list message_tag "Tags" tags
   in
   let%lwt _ =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"ses" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query:parameters ()
   in

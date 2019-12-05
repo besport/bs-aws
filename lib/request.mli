@@ -1,9 +1,9 @@
 val perform :
-  credentials:Aws_common.credentials ->
+  credentials:Common.credentials ->
   service:string ->
-  region:[< Aws_common.Region.t] ->
+  region:[< Common.Region.t] ->
   ?secure:bool ->
-  meth:Aws_base.meth ->
+  meth:Base.meth ->
   host:string ->
   ?port:int ->
   uri:string ->
@@ -13,9 +13,9 @@ val perform :
   unit -> (string * Cohttp.Header.t) Lwt.t
 
 module type CONF = sig
-  val credentials : Aws_common.credentials
+  val credentials : Common.credentials
   val service : string
-  val region : Aws_common.Region.t
+  val region : Common.Region.t
   val secure : bool option
   val host : string
 end
@@ -28,7 +28,7 @@ end
 
 module type SERVICE = sig
   val perform :
-    meth:Aws_base.meth ->
+    meth:Base.meth ->
     uri:string ->
     ?query:(string * string) list ->
     ?headers:(string * string) list ->

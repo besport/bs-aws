@@ -4,26 +4,26 @@ type key
 val hash : string -> string
 
 val signing_key :
-  Aws_common.credentials -> (*date:*)string ->
-  Aws_common.Region.t -> (*service:*)string -> key
+  Common.credentials -> (*date:*)string ->
+  Common.Region.t -> (*service:*)string -> key
 
 val sign : key -> string -> string
 
 val credential : key -> string
 
 val sign_request :
-  Aws_common.credentials -> service:string -> [< Aws_common.Region.t] ->
-  Aws_base.request -> Aws_base.request
+  Common.credentials -> service:string -> [< Common.Region.t] ->
+  Base.request -> Base.request
 
 val sign_request_using_query_parameters :
-  Aws_common.credentials -> service:string -> [< Aws_common.Region.t] ->
+  Common.credentials -> service:string -> [< Common.Region.t] ->
   expiration:int -> ?unsigned_payload:bool ->
-  Aws_base.request -> Aws_base.request
+  Base.request -> Base.request
 
 (****)
 
 val canonical_request :
-  Aws_base.meth -> string ->
+  Base.meth -> string ->
   (string * string) list -> (string * string) list ->
   ?unsigned_payload:bool -> string -> string * string
 val string_to_sign : string -> key -> string -> string

@@ -29,7 +29,7 @@ module Job : sig
     [`output] parameters
 
   val create :
-    credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+    credentials:Common.credentials -> region:Common.Region.t ->
     input:[`input] parameters ->
     ?output_key_prefix:string -> outputs:[`output] parameters list ->
     pipeline_id:string -> unit ->
@@ -47,6 +47,6 @@ module Job : sig
       outputs : output list }
 
   val read :
-    credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+    credentials:Common.credentials -> region:Common.Region.t ->
     id:string -> unit -> t Lwt.t
 end

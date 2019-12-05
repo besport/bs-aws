@@ -19,7 +19,7 @@ val dest :
   destination
 
 val send_email :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   ?configuration_set_name:string ->
   destination:destination ->
   message:message ->

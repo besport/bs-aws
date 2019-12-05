@@ -54,8 +54,8 @@ exception Error of error
 
 let () = Printexc.register_printer @@ function
   | Error {code; message} ->
-      let msg = Printf.sprintf "Aws_common.Error %d: %s" code message
+      let msg = Printf.sprintf "Common.Error %d: %s" code message
       in Some msg
   | _ -> None
 
-let enable_debug = Aws_base.Debug.enable
+let enable_debug = Base.Debug.enable

@@ -1,6 +1,6 @@
 
 let debug =
-  Aws_base.Debug.make "credentials" "Debug credential management." ["all"]
+  Base.Debug.make "credentials" "Debug credential management." ["all"]
 
 exception Failed
 
@@ -24,10 +24,10 @@ let parse_credentials credentials creds =
   let secret_access_key = to_string @@ member "SecretAccessKey" creds in
   let session_token = to_string @@ member "Token" creds in
   let expiration =
-    Aws_base.(from_ISO8601 @@ to_string @@ member "Expiration" creds) in
-  credentials.Aws_common.access_key_id <- access_key_id;
-  credentials.Aws_common.secret_access_key <- secret_access_key;
-  credentials.Aws_common.session_token <- Some session_token;
+    Base.(from_ISO8601 @@ to_string @@ member "Expiration" creds) in
+  credentials.Common.access_key_id <- access_key_id;
+  credentials.Common.secret_access_key <- secret_access_key;
+  credentials.Common.session_token <- Some session_token;
   if debug () then begin
     Format.eprintf "id: %s@." access_key_id;
     Format.eprintf "key: %s@." secret_access_key;
@@ -78,7 +78,7 @@ let refreshable_credentials get credentials =
 
 let get_refreshable_credentials () =
   let credentials =
-    Aws_common.credentials ~access_key_id:"" ~secret_access_key:"" () in
+    Common.credentials ~access_key_id:"" ~secret_access_key:"" () in
   let%lwt () =
     match Sys.getenv "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI" with
     | uri ->
@@ -99,7 +99,7 @@ let get_env_credentials () =
   | Some access_key_id, Some secret_access_key ->
     let session_token = get_env "AWS_SECURITY_TOKEN" in
     Some
-      (Aws_common.credentials ()
+      (Common.credentials ()
          ~access_key_id ~secret_access_key ?session_token)
   | _, _ ->
     None

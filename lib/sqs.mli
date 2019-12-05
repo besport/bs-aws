@@ -1,5 +1,5 @@
 val create_queue :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   ?delay_seconds:int ->
   ?maximum_message_size:int ->
   ?message_retention_period:int ->
@@ -12,7 +12,7 @@ val create_queue :
   queue_name:string -> unit -> string Lwt.t
 
 val set_queue_attributes :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   ?delay_seconds:int ->
   ?maximum_message_size:int ->
   ?message_retention_period:int ->
@@ -63,16 +63,16 @@ module Attribute : sig
 end
 
 val get_queue_attributes :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   attributes:Attribute.t list -> queue_url:string -> unit ->
   Attribute.set Lwt.t
 
 val delete_queue :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   queue_url:string -> unit -> unit Lwt.t
 
 val send_message :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   queue_url:string -> message_body:string -> unit -> unit Lwt.t
 
 type message =
@@ -81,12 +81,12 @@ type message =
     body : string }
 
 val receive_message :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   ?max_number_of_messages:int ->
   ?visibility_timeout:int ->
   ?wait_time_seconds:int ->
   queue_url:string -> unit -> message list Lwt.t
 
 val delete_message :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   queue_url:string -> receipt_handle:string -> unit -> unit Lwt.t

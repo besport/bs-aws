@@ -1,6 +1,6 @@
 
 let sns_endpoint region =
-  Printf.sprintf "sns.%s.amazonaws.com" (Aws_common.Region.to_string region)
+  Printf.sprintf "sns.%s.amazonaws.com" (Common.Region.to_string region)
 
 let init_params act k v = ["Version", "2010-03-31"; "Action", act; k, v]
 
@@ -42,7 +42,7 @@ let entry prefix (k, v) rem =
 
 let sms_attributes ?sender_id ?max_price ?sms_type () =
   List.map (fun (k, v) -> (k, `String v)) @@
-  let open Aws_base.Param in
+  let open Base.Param in
   string "AWS.SNS.SMS.SenderID" sender_id @@
   custom "AWS.SNS.SMS.MaxPrice" string_of_float max_price @@
   custom "AWS.SNS.SMS.SMSType"
@@ -63,7 +63,7 @@ let publish ~credentials ~region ~topic ~message ?(message_attributes = []) () =
     init_params "Publish" "Message" message
   in
   let%lwt _ =
-    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+    Request.perform ~credentials ~service:"sns" ~region ~meth:`POST
       ~host:(sns_endpoint region) ~uri:"/" ~query () in
   Lwt.return ()
   (*TODO: parse XML response*)
@@ -97,7 +97,7 @@ let subscribe
     init_params "Subscribe" "TopicArn" topic_arn)
   in
   let%lwt (res, _) =
-    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+    Request.perform ~credentials ~service:"sns" ~region ~meth:`POST
       ~host:(sns_endpoint region) ~uri:"/" ~query () in
   let i = decode_response res in
   ignore (Xmlm.input i); (* SubscriptionArn *)
@@ -110,7 +110,7 @@ let unsubscribe ~credentials ~region ~subscription_arn () =
     init_params "Unsubscribe" "SubscriptionArn" subscription_arn
   in
   let%lwt _ =
-    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+    Request.perform ~credentials ~service:"sns" ~region ~meth:`POST
       ~host:(sns_endpoint region) ~uri:"/" ~query () in
   Lwt.return ()
 
@@ -128,15 +128,15 @@ let set_subscription_attributes ~credentials ~region
     init_params "SetSubscriptionAttributes" "SubscriptionArn" subscription_arn
   in
   let%lwt _ =
-    Aws_request.perform ~credentials ~service:"sns" ~region ~meth:`POST
+    Request.perform ~credentials ~service:"sns" ~region ~meth:`POST
       ~host:(sns_endpoint region) ~uri:"/" ~query () in
   Lwt.return ()
 
 (* XXX DEPRECATED: *)
 
 module type SETTINGS = sig
-  val credentials : Aws_common.credentials
-  val region : Aws_common.Region.t
+  val credentials : Common.credentials
+  val region : Common.Region.t
   val secure : bool
 end
 

@@ -1,6 +1,6 @@
 
 val describe_endpoints :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   ?next_token:string -> ?max_results:int -> ?mode:[`DEFAULT | `GET_ONLY] ->
   unit ->
   ((*endpoints:*)string list * (*next_token:*)string option) Lwt.t
@@ -15,7 +15,7 @@ type job =
     user_metadata : (string * string) list }
 
 val create_job :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   endpoint:string ->
   ?client_request_token:string ->
   ?job_template:string ->
@@ -44,7 +44,7 @@ val create_job :
   job Lwt.t
 
 val get_job :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   endpoint:string -> id:string ->
   unit ->
   job Lwt.t

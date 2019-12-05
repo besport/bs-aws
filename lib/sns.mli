@@ -9,7 +9,7 @@ val sms_attributes :
   (string * message_attribute_value) list
 
 val publish :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   topic:[ `Phone_number of string
         | `Target_arn of string
         | `Topic_arn of string ] ->
@@ -18,7 +18,7 @@ val publish :
   unit -> unit Lwt.t
 
 val subscribe :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   endpoint:string ->
   protocol:[ `application | `email | `email_json |
              `http | `https | `lambda | `sms | `sqs ] ->
@@ -28,12 +28,12 @@ val subscribe :
   unit -> string Lwt.t
 
 val unsubscribe :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   subscription_arn:string ->
   unit -> unit Lwt.t
 
 val set_subscription_attributes :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   attribute:[ `Delivery_policy of Yojson.Safe.t
             | `Raw_message_delivery of bool ] ->
   subscription_arn:string -> unit ->
@@ -42,8 +42,8 @@ val set_subscription_attributes :
 (* XXX DEPRECATED: *)
 
 module type SETTINGS = sig
-  val credentials : Aws_common.credentials
-  val region : Aws_common.Region.t
+  val credentials : Common.credentials
+  val region : Common.Region.t
   val secure : bool
 end
 

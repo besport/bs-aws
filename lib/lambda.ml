@@ -1,17 +1,17 @@
 
 let endpoint region =
-  Format.sprintf "lambda.%s.amazonaws.com" (Aws_common.Region.to_string region)
+  Format.sprintf "lambda.%s.amazonaws.com" (Common.Region.to_string region)
 
 type error = Handled of string | Unhandled
 
 let invoke
     ~credentials ~region ?client_context ?invocation_type ?log_type ?qualifier
     ?payload ~function_name () =
-  let query = [] |> Aws_base.Param.string "Qualifier" qualifier in
+  let query = [] |> Base.Param.string "Qualifier" qualifier in
   let uri =
     Printf.sprintf "/2015-03-31/functions/%s/invocations" function_name in
   let headers =
-    let open Aws_base.Param in
+    let open Base.Param in
     []
     |> custom "x-amz-client-context"
          (fun c -> Base64.encode_string (Yojson.Safe.to_string  c))
@@ -36,7 +36,7 @@ let invoke
     | Some payload -> Some (Yojson.Safe.to_string payload)
   in
   let%lwt (res, headers) =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"lambda" ~region ~meth:`POST
       ~host:(endpoint region) ~uri ~query ~headers ?payload ()
   in

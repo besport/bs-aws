@@ -1,13 +1,13 @@
-let debug = Aws_base.Debug.make "request" "Debug HTTP requests." ["all"]
+let debug = Base.Debug.make "request" "Debug HTTP requests." ["all"]
 
 let (>>=) = Lwt.bind
 
 let encode_post_query req =
   match req with
-  | {Aws_base.meth = `POST;
+  | {Base.meth = `POST;
      query = (_ :: _) as query; payload = ""; headers} ->
       {req with
-       Aws_base.headers =
+       Base.headers =
          ("content-type", "application/x-www-form-urlencoded") :: headers;
        query = [];
        payload =
@@ -15,10 +15,10 @@ let encode_post_query req =
            (List.map
               (fun (f, v) ->
                  Format.sprintf "%s=%s"
-                   (Aws_base.encode_form_string f)
-                   (Aws_base.encode_form_string v))
+                   (Base.encode_form_string f)
+                   (Base.encode_form_string v))
               query)}
-  | {Aws_base.meth = `POST; query = _ :: _} ->
+  | {Base.meth = `POST; query = _ :: _} ->
       assert false
   | _ ->
       req
@@ -62,28 +62,28 @@ let simple_perform ~secure ~meth ~host ?port ~uri
     Lwt.return (body, headers)
   | _ ->
     let error =
-      {Aws_common.request_id = "";  (*XXX*)
+      {Common.request_id = "";  (*XXX*)
        code = Cohttp.Code.code_of_status code;
        typ = "";
        message = body}
     in
-    Lwt.fail (Aws_common.Error error)
+    Lwt.fail (Common.Error error)
 
 let perform ~credentials ~service ~region
       ?secure ~meth ~host ?port ~uri ?query ?headers ?payload () =
-  let {Aws_base.secure; meth; uri; query; headers; payload } as req =
-    Aws_base.request ?secure ~meth ~host ~uri ?query ?headers ?payload ()
+  let {Base.secure; meth; uri; query; headers; payload } as req =
+    Base.request ?secure ~meth ~host ~uri ?query ?headers ?payload ()
     |> encode_post_query
-    |> Aws_signature.sign_request credentials ~service region
+    |> Signature.sign_request credentials ~service region
   in
-  if debug () then Aws_base.print_curl_request req;
+  if debug () then Base.print_curl_request req;
   simple_perform
     ~secure ~meth ~host ?port ~uri ~query ~headers ~payload ()
 
 module type CONF = sig
-  val credentials : Aws_common.credentials
+  val credentials : Common.credentials
   val service : string
-  val region : Aws_common.Region.t
+  val region : Common.Region.t
   val secure : bool option
   val host : string
 end
@@ -96,7 +96,7 @@ end
 
 module type SERVICE = sig
   val perform :
-    meth:Aws_base.meth ->
+    meth:Base.meth ->
     uri:string ->
     ?query:(string * string) list ->
     ?headers:(string * string) list ->

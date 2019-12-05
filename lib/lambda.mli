@@ -2,7 +2,7 @@
 type error = Handled of string | Unhandled
 
 val invoke :
-  credentials:Aws_common.credentials -> region:Aws_common.Region.t ->
+  credentials:Common.credentials -> region:Common.Region.t ->
   ?client_context:Yojson.Safe.t ->
   ?invocation_type:[ `Dry_run | `Event | `Request_response ] ->
   ?log_type:[ `None | `Tail ] ->

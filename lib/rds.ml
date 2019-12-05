@@ -1,6 +1,6 @@
 
 let endpoint region =
-  Format.sprintf "rds.%s.amazonaws.com" (Aws_common.Region.to_string region)
+  Format.sprintf "rds.%s.amazonaws.com" (Common.Region.to_string region)
 
 let init_params act = ["Version", "2014-10-31"; "Action", act]
 
@@ -42,10 +42,10 @@ let parse_status_info i =
 let describe_db_instances ~credentials ~region ?db_instance_identifier () =
   let query =
     init_params "DescribeDBInstances"
-    |> Aws_base.Param.string "DBInstanceIdentifier" db_instance_identifier
+    |> Base.Param.string "DBInstanceIdentifier" db_instance_identifier
   in
   let%lwt (res, _) =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"rds" ~region ~meth:`POST ~host:(endpoint region)
       ~uri:"/" ~query ()
   in

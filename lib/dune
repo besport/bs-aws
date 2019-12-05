@@ -1,9 +1,9 @@
 (library
  (name bs_aws)
  (public_name bs-aws)
- (wrapped false)
  (libraries lwt lwt_ppx cohttp-lwt-unix xmlm ezxmlm yojson cryptokit)
  (preprocess (pps lwt_ppx))
- (private_modules aws_base aws_signature)
+ (private_modules Signature)
+ (modules Base Credentials Lambda Rds S3 Signature Sqs Common Elastic_transcoder Mediaconvert Request Ses Sns)
  (flags (:standard -w -9))
 )

@@ -1,13 +1,13 @@
 
 let endpoint region =
   Format.sprintf "mediaconvert.%s.amazonaws.com"
-    (Aws_common.Region.to_string region)
+    (Common.Region.to_string region)
 
 let describe_endpoints
     ~credentials ~region ?next_token ?max_results ?mode () =
   let uri = "/2017-08-29/endpoints" in
   let query =
-    let open Aws_base.Param in
+    let open Base.Param in
     []
     |> string "nextToken" next_token
     |> int "maxResults" max_results
@@ -19,7 +19,7 @@ let describe_endpoints
          mode
   in
   let%lwt res, _ =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"mediaconvert" ~region ~meth:`POST
       ~host:(endpoint region) ~uri ~query ()
   in
@@ -141,7 +141,7 @@ let create_job ~credentials ~region ~endpoint
   in
   let payload = Yojson.Safe.to_string (`Assoc payload) in
   let%lwt res, _ =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"mediaconvert" ~region ~meth:`POST
       ~host:(endpoint_host endpoint) ~uri ~payload ()
   in
@@ -150,7 +150,7 @@ let create_job ~credentials ~region ~endpoint
 let get_job ~credentials ~region ~endpoint ~id () =
   let uri = Printf.sprintf "/2017-08-29/jobs/" ^ id in
   let%lwt res, _ =
-    Aws_request.perform
+    Request.perform
       ~credentials ~service:"mediaconvert" ~region ~meth:`GET
       ~host:(endpoint_host endpoint) ~uri ()
   in
