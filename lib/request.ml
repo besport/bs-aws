@@ -18,8 +18,6 @@ let encode_post_query req =
                    (Base.encode_form_string f)
                    (Base.encode_form_string v))
               query)}
-  | {Base.meth = `POST; query = _ :: _} ->
-      assert false
   | _ ->
       req
 
