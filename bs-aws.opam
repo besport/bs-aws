@@ -23,4 +23,5 @@ depends: [
   "xmlm"
   "ezxmlm"
   "dune" {>= "1.11"}
+  "logs"
 ]

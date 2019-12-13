@@ -1,9 +1,10 @@
 (library
  (name bs_aws)
  (public_name bs-aws)
- (libraries lwt lwt_ppx cohttp-lwt-unix xmlm ezxmlm yojson cryptokit)
+ (libraries lwt lwt_ppx cohttp-lwt-unix xmlm ezxmlm yojson cryptokit logs)
  (preprocess (pps lwt_ppx))
  (private_modules Signature)
- (modules Base Credentials Lambda Rds S3 Signature Sqs Common Elastic_transcoder Mediaconvert Request Ses Sns)
+ (modules Base Credentials Service Lambda Rds S3 Signature Sqs Common
+          Elastic_transcoder Mediaconvert Request Ses Sns Elasticsearch)
  (flags (:standard -w -9))
 )
