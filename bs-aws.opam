@@ -1,8 +1,8 @@
 opam-version: "2.0"
 name: "bs-aws"
+version: "3.0"
 synopsis: "An incomplete interface to Amazon Web Services"
 description: "an incomplete interface to Amazon Web Services"
-version: "2.2"
 maintainer: "Jan Rochel <jan@rochel.info>"
 authors: [ "Jerôme Vouillon"
            "Jan Rochel" ]

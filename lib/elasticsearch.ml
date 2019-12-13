@@ -3,8 +3,19 @@ open Printf
 let src = Logs.Src.create "bs-aws.elasticsearch" ~doc:"bs-aws.elasticsearch"
 module Log = (val Logs.src_log src : Logs.LOG)
 
-module MakeFromService (S : Service.SERVICE) = struct
-  module Service : Service.SERVICE = S
+module type S = sig
+  module Service : Service.S
+  val index_exists : string -> bool Lwt.t
+  val put : index:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
+  val delete_index : string -> unit Lwt.t
+  val bulk_index : index:string -> (string * Yojson.Basic.t) list -> unit Lwt.t
+  val reindex : ?wait_for_completion:bool -> string -> string -> unit Lwt.t
+  val query : index:string -> ?count:int -> ?source:string list ->
+              Yojson.Basic.t -> Yojson.Safe.t Lwt.t
+end
+
+module MakeFromService (Service_in : Service.S) : S = struct
+  module Service : Service.S = Service_in
 
   let json_headers = ["content-type", "application/json"]
 
@@ -83,8 +94,15 @@ module MakeFromService (S : Service.SERVICE) = struct
     Lwt.return @@ Yojson.Safe.from_string response_body
 end
 
-module Make (Conf : Service.CONF) =
-  MakeFromService (Service.Make (Conf) (struct let name = "es" end))
+module type CONF = sig
+  val host : string
+end
 
-module MakeNoAws (Conf : Service.CONF_NO_AWS) =
+module Make (ServiceConf : Service.CONF) (EsConf : CONF) : S =
+  MakeFromService (
+    Service.Make (ServiceConf)
+                 (struct let name = "es" and host = EsConf.host end)
+  )
+
+module MakeNoAws (Conf : Service.CONF_NO_AWS) : S =
   MakeFromService (Service.MakeNoAws (Conf))

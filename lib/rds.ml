@@ -39,41 +39,42 @@ let parse_status_info i =
       else
         None }
 
-let describe_db_instances ~credentials ~region ?db_instance_identifier () =
-  let query =
-    init_params "DescribeDBInstances"
-    |> Base.Param.string "DBInstanceIdentifier" db_instance_identifier
-  in
-  let%lwt (res, _) =
-    Request.perform
-      ~credentials ~service:"rds" ~region ~meth:`POST ~host:(endpoint region)
-      ~uri:"/" ~query ()
-  in
-  let open Ezxmlm in
-  let (_, res) = from_string res in
-  let l =
-    res
-    |> member "DescribeDBInstancesResponse"
-    |> member "DescribeDBInstancesResult"
-    |> member "DBInstances"
-    |> members "DBInstance"
-    |> List.map
-      (fun i ->
-         { db_instance_identifier = data_to_string (member "DBInstanceIdentifier" i);
-           endpoint = if has_member "Endpoint" i
-                        then Some (parse_endpoint @@ member "Endpoint" i)
-                        else None;
-           db_instance_status = data_to_string (member "DBInstanceStatus" i);
-           status_infos =
-             if has_member "StatusInfos" i then
-               List.map parse_status_info
-                 (members "DBInstanceStatusInfo"
-                    (member "StatusInfos" i))
-             else
-               [];
-           read_replica_db_instance_identifiers =
-             List.map data_to_string
-               (members "ReadReplicaDBInstanceIdentifier"
-                  (member "ReadReplicaDBInstanceIdentifiers" i)) })
-  in
-  Lwt.return l
+module Make (Conf : Service.CONF) = struct
+  module Service = Service.Make (Conf)
+    (struct let name = "rds" and host = endpoint Conf.region end)
+
+  let describe_db_instances ?db_instance_identifier () =
+    let query =
+      init_params "DescribeDBInstances"
+      |> Base.Param.string "DBInstanceIdentifier" db_instance_identifier
+    in
+    let%lwt (res, _) = Service.request ~meth:`POST ~uri:"/" ~query () in
+    let open Ezxmlm in
+    let (_, res) = from_string res in
+    let l =
+      res
+      |> member "DescribeDBInstancesResponse"
+      |> member "DescribeDBInstancesResult"
+      |> member "DBInstances"
+      |> members "DBInstance"
+      |> List.map
+        (fun i ->
+           { db_instance_identifier = data_to_string (member "DBInstanceIdentifier" i);
+             endpoint = if has_member "Endpoint" i
+                          then Some (parse_endpoint @@ member "Endpoint" i)
+                          else None;
+             db_instance_status = data_to_string (member "DBInstanceStatus" i);
+             status_infos =
+               if has_member "StatusInfos" i then
+                 List.map parse_status_info
+                   (members "DBInstanceStatusInfo"
+                      (member "StatusInfos" i))
+               else
+                 [];
+             read_replica_db_instance_identifiers =
+               List.map data_to_string
+                 (members "ReadReplicaDBInstanceIdentifier"
+                    (member "ReadReplicaDBInstanceIdentifiers" i)) })
+    in
+    Lwt.return l
+end

@@ -1,32 +1,36 @@
+module Make (Conf : Service.CONF) : sig
 
-type content = { charset : string option; data : string }
+  module Service : Service.S
 
-val content : ?charset:string -> string -> content
+  type content = { charset : string option; data : string }
 
-type body = { html : content option; text : content option }
+  val content : ?charset:string -> string -> content
 
-val body : ?html:content -> ?text:content -> unit -> body
+  type body = { html : content option; text : content option }
 
-type message = { subject : content; body : body }
+  val body : ?html:content -> ?text:content -> unit -> body
 
-type destination =
-  { bcc_addresses : string list;
-    cc_addresses : string list;
-    to_addresses : string list }
+  type message = { subject : content; body : body }
 
-val dest :
-  ?bcc:string list -> ?cc:string list -> ?to_:string list -> unit ->
-  destination
+  type destination =
+    { bcc_addresses : string list;
+      cc_addresses : string list;
+      to_addresses : string list }
 
-val send_email :
-  credentials:Common.credentials -> region:Common.Region.t ->
-  ?configuration_set_name:string ->
-  destination:destination ->
-  message:message ->
-  ?reply_to_addresses:string list ->
-  ?return_path:string ->
-  ?return_path_arn:string ->
-  source:string ->
-  ?source_arn:string ->
-  ?tags:(string * string) list ->
-  unit -> unit Lwt.t
+  val dest :
+    ?bcc:string list -> ?cc:string list -> ?to_:string list -> unit ->
+    destination
+
+  val send_email :
+    ?configuration_set_name:string ->
+    destination:destination ->
+    message:message ->
+    ?reply_to_addresses:string list ->
+    ?return_path:string ->
+    ?return_path_arn:string ->
+    source:string ->
+    ?source_arn:string ->
+    ?tags:(string * string) list ->
+    unit -> unit Lwt.t
+
+end

@@ -16,7 +16,8 @@ type db_instance =
     status_infos : status_info list;
     read_replica_db_instance_identifiers : string list }
 
-val describe_db_instances :
-  credentials:Common.credentials ->
-  region:[< Common.Region.t ] ->
-  ?db_instance_identifier:string -> unit -> db_instance list Lwt.t
+module Make (Conf : Service.CONF) : sig
+  module Service : Service.S
+  val describe_db_instances :
+    ?db_instance_identifier:string -> unit -> db_instance list Lwt.t
+end
