@@ -5,17 +5,25 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 module type S = sig
   module Service : Service.S
+  type json = Yojson.Basic.t
   val index_exists : string -> bool Lwt.t
-  val put : index:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
+  val get_document : index:string -> string -> json Lwt.t
+  val update_document : index:string -> doc:string -> json -> unit Lwt.t
+  val put_index : index:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
   val delete_index : string -> unit Lwt.t
   val bulk_index : index:string -> (string * Yojson.Basic.t) list -> unit Lwt.t
   val reindex : ?wait_for_completion:bool -> string -> string -> unit Lwt.t
   val query : index:string -> ?count:int -> ?source:string list ->
               Yojson.Basic.t -> Yojson.Safe.t Lwt.t
+  val template_exists : string -> bool Lwt.t
+  val delete_template : string -> unit Lwt.t
+  val put_template : template:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
 end
 
 module MakeFromService (Service_in : Service.S) : S = struct
   module Service : Service.S = Service_in
+
+  type json = Yojson.Basic.t
 
   let json_headers = ["content-type", "application/json"]
 
@@ -25,7 +33,23 @@ module MakeFromService (Service_in : Service.S) : S = struct
       Lwt.return true
     with Common.(Error {code = 404}) -> Lwt.return_false
 
-  let put ~index json =
+  let get_document ~index doc =
+    let uri = sprintf "/%s/_doc/%s" index doc in
+    let%lwt response_body, _ =
+      Service.request ~meth:`GET ~uri ()
+    in
+    Lwt.return @@ Yojson.Basic.from_string response_body
+
+  let update_document ~index ~doc json =
+    let uri = sprintf "/%s/_doc/%s" index doc in
+    let headers = json_headers in
+    let payload = Yojson.Basic.to_string json in
+    let%lwt _ =
+      Service.request ~headers ~meth:`PUT ~uri ~payload ()
+    in
+    Lwt.return_unit
+
+  let put_index ~index json =
     let data = Yojson.Basic.to_string json in
     let headers = json_headers in
     let%lwt response_body, _ =
@@ -92,6 +116,31 @@ module MakeFromService (Service_in : Service.S) : S = struct
     in
     Log.debug (fun m -> m "response: %s" response_body);
     Lwt.return @@ Yojson.Safe.from_string response_body
+
+  let template_exists template =
+    try%lwt
+      let%lwt _ =
+        Service.request ~meth:`HEAD ~uri:(sprintf "/_template/%s" template) ()
+      in
+      Lwt.return true
+    with Common.(Error {code = 404}) -> Lwt.return_false
+
+  let delete_template t =
+    Log.info (fun m -> m "deleting template %s" t);
+    let%lwt response, _ =
+      Service.request ~meth:`DELETE ~uri:("/_template/" ^ t) ()
+    in
+    Lwt.return @@ Log.info @@ fun m -> m "deleted template %s: %s" t response
+
+  let put_template ~template specification =
+    let data = Yojson.Basic.to_string specification in
+    let headers = json_headers in
+    let uri = "/_template/" ^ template in
+    let%lwt response_body, _ =
+      Service.request ~headers ~meth:`PUT ~payload:data ~uri ()
+    in
+    Lwt.return @@ Yojson.Safe.from_string response_body
+
 end
 
 module type CONF = sig
