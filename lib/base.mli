@@ -29,6 +29,7 @@ val encode_form_string : string -> string
 module Debug : sig
   val make : string -> string -> string list -> (unit -> bool)
   val enable : string -> unit
+  val disable : string -> unit
   val all : unit -> bool
 end
 
