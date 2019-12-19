@@ -164,17 +164,20 @@ module Debug = struct
       (fun (_, d) -> Format.eprintf "    %s: %s@." d.name d.desc) !debugs;
     exit 1
 
-  let rec enable s =
+  let rec toggle s b =
     if s = "help" || not (List.mem_assoc s !debugs) then
       print ()
     else
       try
         let d = List.assoc s !debugs in
         if not d.state then begin
-          d.state <- true;
-          List.iter enable (Hashtbl.find_all association s)
+          d.state <- b;
+          List.iter (fun x -> toggle x b) (Hashtbl.find_all association s)
         end
       with Not_found -> ()
+
+  let enable s = toggle s true
+  let disable s = toggle s false
 
   let all = make "all" "Enable all debugging options." []
 end
