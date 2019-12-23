@@ -54,24 +54,34 @@ module Make (Conf : Service.CONF) = struct
       snd @@ Xmlm.input_doc_tree ~el ~data @@ Xmlm.make_input (`String (0, res))
     in
 
+    let rec filter_map f l =
+      match l with
+      | [] ->
+         []
+      | x :: r ->
+         match f x with
+         | None -> filter_map f r
+         | Some v -> v :: filter_map f r
+    in
+
     let parse_response =
       let field = function `Tag (t, [`Data d]) -> Some (t, d) | _ -> None in
       let member = function
-        | `Tag ("member", xs) -> Some (List.filter_map field xs)
+        | `Tag ("member", xs) -> Some (filter_map field xs)
         | _ -> None
       in
       let datapoints = function
-        | `Tag ("Datapoints", xs) -> Some (List.filter_map member xs)
+        | `Tag ("Datapoints", xs) -> Some (filter_map member xs)
         | _ -> None
       in
       let result = function
         | `Tag ("GetMetricStatisticsResult", xs) ->
-            Some (List.flatten @@ List.filter_map datapoints xs)
+            Some (List.flatten @@ filter_map datapoints xs)
         | _ -> None
       in
       function
       | `Tag ("GetMetricStatisticsResponse", xs) ->
-          List.flatten @@ List.filter_map result xs
+          List.flatten @@ filter_map result xs
       | _ -> assert false
     in
 
