@@ -5,7 +5,7 @@ module Make (Conf : Service.CONF) = struct
       (Common.Region.to_string region)
 
   module Service = Service.Make (Conf)
-    (struct let name = "lambda" and host = endpoint Conf.region end)
+    (struct let name = "mediaconvert" and host = endpoint Conf.region end)
 
   let describe_endpoints
       ?next_token ?max_results ?mode () =
