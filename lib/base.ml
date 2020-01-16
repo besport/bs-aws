@@ -71,8 +71,9 @@ let request
    headers = ("host", host) :: headers}
 
 let print_curl_request {secure; meth; uri; query; headers; payload} =
+  let host = try List.assoc "host" headers with Not_found -> "<unknown>" in
   Format.eprintf "curl '%s://%s%s'"
-    (if secure then "https" else "http") (List.assoc "host" headers) uri;
+    (if secure then "https" else "http") host uri;
   if query <> [] then begin
     Format.eprintf "'?";
     List.iteri
