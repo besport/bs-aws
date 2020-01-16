@@ -28,6 +28,8 @@ module String_map = Map.Make(struct
 
 let simple_perform ~secure ~meth ~host ?port ~uri
                    ?(query = []) ?(headers = []) ?(payload = "") () =
+  if debug () then Base.print_curl_request
+                     {Base.secure; meth; uri; query; headers; payload};
   let headers =
     List.fold_left
       (fun acc (id, v) -> Cohttp.Header.add acc id v)
@@ -69,12 +71,11 @@ let simple_perform ~secure ~meth ~host ?port ~uri
 
 let perform ~credentials ~service ~region
       ?secure ~meth ~host ?port ~uri ?query ?headers ?payload () =
-  let {Base.secure; meth; uri; query; headers; payload } as req =
+  let {Base.secure; meth; uri; query; headers; payload } =
     Base.request ?secure ~meth ~host ~uri ?query ?headers ?payload ()
     |> encode_post_query
     |> Signature.sign_request credentials ~service region
   in
-  if debug () then Base.print_curl_request req;
   simple_perform
     ~secure ~meth ~host ?port ~uri ~query ~headers ~payload ()
 
