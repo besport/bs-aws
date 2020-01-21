@@ -18,6 +18,7 @@ module type S = sig
   val template_exists : string -> bool Lwt.t
   val delete_template : string -> unit Lwt.t
   val put_template : template:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
+  val put_mapping : index:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
 end
 
 module MakeFromService (Service_in : Service.S) : S = struct
@@ -138,6 +139,15 @@ module MakeFromService (Service_in : Service.S) : S = struct
     let uri = "/_template/" ^ template in
     let%lwt response_body, _ =
       Service.request ~headers ~meth:`PUT ~payload:data ~uri ()
+    in
+    Lwt.return @@ Yojson.Safe.from_string response_body
+
+  let put_mapping ~index mapping =
+    let uri = sprintf "/%s/_mapping" index in
+    let headers = json_headers in
+    let payload = Yojson.Basic.to_string mapping in
+    let%lwt response_body, _ =
+      Service.request ~headers ~meth:`PUT ~uri ~payload ()
     in
     Lwt.return @@ Yojson.Safe.from_string response_body
 
