@@ -7,6 +7,7 @@ module type S = sig
   type json = Yojson.Basic.t
   val index_exists : string -> bool Lwt.t
   val get_document : index:string -> string -> json Lwt.t
+  val index_document : index:string -> doc:string -> json -> unit Lwt.t
   val update_document : index:string -> doc:string -> json -> unit Lwt.t
   val put_index : index:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
   val delete_index : string -> unit Lwt.t

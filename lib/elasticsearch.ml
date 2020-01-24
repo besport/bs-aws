@@ -8,6 +8,7 @@ module type S = sig
   type json = Yojson.Basic.t
   val index_exists : string -> bool Lwt.t
   val get_document : index:string -> string -> json Lwt.t
+  val index_document : index:string -> doc:string -> json -> unit Lwt.t
   val update_document : index:string -> doc:string -> json -> unit Lwt.t
   val put_index : index:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
   val delete_index : string -> unit Lwt.t
@@ -41,12 +42,21 @@ module MakeFromService (Service_in : Service.S) : S = struct
     in
     Lwt.return @@ Yojson.Basic.from_string response_body
 
-  let update_document ~index ~doc json =
+  let index_document ~index ~doc json =
     let uri = sprintf "/%s/_doc/%s" index doc in
     let headers = json_headers in
     let payload = Yojson.Basic.to_string json in
     let%lwt _ =
       Service.request ~headers ~meth:`PUT ~uri ~payload ()
+    in
+    Lwt.return_unit
+
+  let update_document ~index ~doc json =
+    let uri = sprintf "/%s/_update/%s" index doc in
+    let headers = json_headers in
+    let payload = Yojson.Basic.to_string json in
+    let%lwt _ =
+      Service.request ~headers ~meth:`POST ~uri ~payload ()
     in
     Lwt.return_unit
 
