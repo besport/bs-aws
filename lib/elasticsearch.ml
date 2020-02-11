@@ -12,7 +12,7 @@ module type S = sig
   val update_document : index:string -> doc:string -> json -> unit Lwt.t
   val put_index : index:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
   val delete_index : string -> unit Lwt.t
-  val bulk_index : index:string -> (string * Yojson.Basic.t) list -> unit Lwt.t
+  val bulk : Yojson.Basic.t list -> Yojson.Safe.t Lwt.t
   val reindex : ?wait_for_completion:bool -> string -> string -> unit Lwt.t
   val query : index:string -> ?count:int -> ?source:string list ->
               Yojson.Basic.t -> Yojson.Safe.t Lwt.t
@@ -73,29 +73,14 @@ module MakeFromService (Service_in : Service.S) : S = struct
     let%lwt response, _ = Service.request ~meth:`DELETE ~uri:("/" ^ index) () in
     Lwt.return @@ Log.info @@ fun m -> m "deleted index /%s: %s" index response
 
-  let bulk_index ~index docs =
-    Log.warn (fun m -> m "pushing %d documents to %s" (List.length docs) index);
-    let format_doc (id, content) =
-      let command = `Assoc ["index", `Assoc ["_id", `String id]] in
-      sprintf "%s\n%s\n"
-        (Yojson.Basic.to_string command)
-        (Yojson.Basic.to_string content)
-    in
-    let data = String.concat "" @@ List.map format_doc docs in
+  let bulk jsons =
+    let lines = List.map (fun j -> Yojson.Basic.to_string j ^ "\n") jsons in
+    let data = String.concat "" lines in
     let headers = json_headers in
     let%lwt response_body, _ =
-      Service.request ~headers ~meth:`POST ~payload:data
-        ~uri:(sprintf "/%s/_bulk" index)
-        ()
+      Service.request ~headers ~meth:`POST ~payload:data ~uri:"/_bulk" ()
     in
-    let parse_response r = Yojson.Safe.Util.(to_bool @@ member "errors" r) in
-    let json = Yojson.Safe.from_string response_body in
-    let errors = parse_response json in
-    if errors
-    then (
-      Log.err (fun m -> m "%s : %s" __LOC__ response_body);
-      failwith "errors occurred during Elasticsearch.bulk_index")
-    else Lwt.return_unit
+    Lwt.return @@ Yojson.Safe.from_string response_body
 
   let reindex ?(wait_for_completion = true) source dest =
     let uri = "/_reindex" in
