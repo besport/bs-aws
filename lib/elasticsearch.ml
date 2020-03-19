@@ -152,11 +152,11 @@ module MakeFromService (Service_in : Service.S) : S = struct
       let size = match count with None -> [] | Some c -> ["size", `Int c] in
       let source =
         match source with
-        | None -> []
-        | Some l -> ["_source", `List (List.map (fun s -> `String s) l)]
+        | None -> "_source", `Bool false
+        | Some l -> "_source", `List (List.map (fun s -> `String s) l)
       in
       let payload =
-        Yojson.Basic.to_string @@ `Assoc (source @ size @ ["query", content])
+        Yojson.Basic.to_string @@ `Assoc ((source :: size) @ ["query", content])
       in
       let headers = json_headers in
       Log.debug (fun m -> m "/%s/_search %s" index payload);
