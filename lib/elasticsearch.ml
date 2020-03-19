@@ -4,6 +4,21 @@ let src = Logs.Src.create "bs-aws.elasticsearch" ~doc:"bs-aws.elasticsearch"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
+module Of_json = struct
+  open Yojson.Basic.Util
+
+  let try_with transform field j =
+    try transform @@ member field j
+    with Type_error _ as exn ->
+      prerr_string @@ "error while parsing field \"" ^ field ^ "\":\n";
+      prerr_string @@ Yojson.Basic.to_string j;
+      raise exn
+
+  let string = try_with to_string
+  let float = try_with to_float
+  let int = try_with to_int
+end
+
 module type S = sig
   module Service : Service.S
 
@@ -19,12 +34,21 @@ module type S = sig
   val bulk : Yojson.Basic.t list -> Yojson.Safe.t Lwt.t
   val reindex : ?wait_for_completion:bool -> string -> string -> unit Lwt.t
 
-  val query
-    :  index:string
-    -> ?count:int
-    -> ?source:string list
-    -> Yojson.Basic.t
-    -> Yojson.Safe.t Lwt.t
+  module Search : sig
+    type hit =
+      { _index : string
+      ; _type : string
+      ; _id : string
+      ; _score : float
+      ; _source : json }
+
+    val query
+      :  index:string
+      -> ?count:int
+      -> ?source:string list
+      -> Yojson.Basic.t
+      -> hit list Lwt.t
+  end
 
   val template_exists : string -> bool Lwt.t
   val delete_template : string -> unit Lwt.t
@@ -108,25 +132,50 @@ module MakeFromService (Service_in : Service.S) : S = struct
     in
     Lwt.return @@ Log.info (fun m -> m "reindexing launched on /%s" dest)
 
-  let query ~index ?count ?source content =
-    let size = match count with None -> [] | Some c -> ["size", `Int c] in
-    let source =
-      match source with
-      | None -> []
-      | Some l -> ["_source", `List (List.map (fun s -> `String s) l)]
-    in
-    let payload =
-      Yojson.Basic.to_string @@ `Assoc (source @ size @ ["query", content])
-    in
-    let headers = json_headers in
-    Log.debug (fun m -> m "/%s/_search %s" index payload);
-    let%lwt response_body, _ =
-      Service.request ~headers ~meth:`POST ~payload
-        ~uri:(sprintf "/%s/_search" index)
-        ()
-    in
-    Log.debug (fun m -> m "response: %s" response_body);
-    Lwt.return @@ Yojson.Safe.from_string response_body
+  module Search = struct
+    type hit =
+      { _index : string
+      ; _type : string
+      ; _id : string
+      ; _score : float
+      ; _source : json }
+
+    let hit_of_json j =
+      let open Of_json in
+      { _index = string "_index" j
+      ; _type = string "_type" j
+      ; _id = string "_id" j
+      ; _score = float "_score" j
+      ; _source = Yojson.Basic.Util.member "_source" j }
+
+    let query ~index ?count ?source content =
+      let size = match count with None -> [] | Some c -> ["size", `Int c] in
+      let source =
+        match source with
+        | None -> []
+        | Some l -> ["_source", `List (List.map (fun s -> `String s) l)]
+      in
+      let payload =
+        Yojson.Basic.to_string @@ `Assoc (source @ size @ ["query", content])
+      in
+      let headers = json_headers in
+      Log.debug (fun m -> m "/%s/_search %s" index payload);
+      let%lwt response_body, _ =
+        Service.request ~headers ~meth:`POST ~payload
+          ~uri:(sprintf "/%s/_search" index)
+          ()
+      in
+      Log.debug (fun m -> m "response: %s" response_body);
+      let hits =
+        let response = Yojson.Basic.from_string response_body in
+        try
+          let open Yojson.Basic.Util in
+          List.map hit_of_json @@ to_list @@ member "hits"
+          @@ member "hits" response
+        with exn -> (*TODO: print json*) raise exn
+      in
+      Lwt.return hits
+  end
 
   let template_exists template =
     try%lwt

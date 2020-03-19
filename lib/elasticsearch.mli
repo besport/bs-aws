@@ -2,6 +2,12 @@ module type CONF = sig
   val host : string
 end
 
+module Of_json : sig
+  val string : string -> Yojson.Basic.t -> string
+  val float : string -> Yojson.Basic.t -> float
+  val int : string -> Yojson.Basic.t -> int
+end
+
 module type S = sig
   module Service : Service.S
 
@@ -17,12 +23,21 @@ module type S = sig
   val bulk : Yojson.Basic.t list -> Yojson.Safe.t Lwt.t
   val reindex : ?wait_for_completion:bool -> string -> string -> unit Lwt.t
 
-  val query
-    :  index:string
-    -> ?count:int
-    -> ?source:string list
-    -> Yojson.Basic.t
-    -> Yojson.Safe.t Lwt.t
+  module Search : sig
+    type hit =
+      { _index : string
+      ; _type : string
+      ; _id : string
+      ; _score : float
+      ; _source : json }
+
+    val query
+      :  index:string
+      -> ?count:int
+      -> ?source:string list
+      -> Yojson.Basic.t
+      -> hit list Lwt.t
+  end
 
   val template_exists : string -> bool Lwt.t
   val delete_template : string -> unit Lwt.t
