@@ -1,11 +1,14 @@
 open Printf
 
 let src = Logs.Src.create "bs-aws.elasticsearch" ~doc:"bs-aws.elasticsearch"
+
 module Log = (val Logs.src_log src : Logs.LOG)
 
 module type S = sig
   module Service : Service.S
+
   type json = Yojson.Basic.t
+
   val index_exists : string -> bool Lwt.t
   val get_document : index:string -> string -> json Lwt.t
   val index_document : index:string -> doc:string -> json -> unit Lwt.t
@@ -15,8 +18,14 @@ module type S = sig
   val delete_index : string -> unit Lwt.t
   val bulk : Yojson.Basic.t list -> Yojson.Safe.t Lwt.t
   val reindex : ?wait_for_completion:bool -> string -> string -> unit Lwt.t
-  val query : index:string -> ?count:int -> ?source:string list ->
-              Yojson.Basic.t -> Yojson.Safe.t Lwt.t
+
+  val query
+    :  index:string
+    -> ?count:int
+    -> ?source:string list
+    -> Yojson.Basic.t
+    -> Yojson.Safe.t Lwt.t
+
   val template_exists : string -> bool Lwt.t
   val delete_template : string -> unit Lwt.t
   val put_template : template:string -> Yojson.Basic.t -> Yojson.Safe.t Lwt.t
@@ -38,34 +47,26 @@ module MakeFromService (Service_in : Service.S) : S = struct
 
   let get_document ~index doc =
     let uri = sprintf "/%s/_doc/%s" index doc in
-    let%lwt response_body, _ =
-      Service.request ~meth:`GET ~uri ()
-    in
+    let%lwt response_body, _ = Service.request ~meth:`GET ~uri () in
     Lwt.return @@ Yojson.Basic.from_string response_body
 
   let index_document ~index ~doc json =
     let uri = sprintf "/%s/_doc/%s" index doc in
     let headers = json_headers in
     let payload = Yojson.Basic.to_string json in
-    let%lwt _ =
-      Service.request ~headers ~meth:`PUT ~uri ~payload ()
-    in
+    let%lwt _ = Service.request ~headers ~meth:`PUT ~uri ~payload () in
     Lwt.return_unit
 
   let update_document ~index ~doc json =
     let uri = sprintf "/%s/_update/%s" index doc in
     let headers = json_headers in
     let payload = Yojson.Basic.to_string json in
-    let%lwt _ =
-      Service.request ~headers ~meth:`POST ~uri ~payload ()
-    in
+    let%lwt _ = Service.request ~headers ~meth:`POST ~uri ~payload () in
     Lwt.return_unit
 
   let delete_document ~index doc =
     let uri = sprintf "/%s/_doc/%s" index doc in
-    let%lwt _ =
-      Service.request ~meth:`DELETE ~uri ()
-    in
+    let%lwt _ = Service.request ~meth:`DELETE ~uri () in
     Lwt.return_unit
 
   let put_index ~index json =
@@ -78,7 +79,9 @@ module MakeFromService (Service_in : Service.S) : S = struct
 
   let delete_index index =
     Log.info (fun m -> m "deleting index /%s" index);
-    let%lwt response, _ = Service.request ~meth:`DELETE ~uri:("/" ^ index) () in
+    let%lwt response, _ =
+      Service.request ~meth:`DELETE ~uri:("/" ^ index) ()
+    in
     Lwt.return @@ Log.info @@ fun m -> m "deleted index /%s: %s" index response
 
   let bulk jsons =
@@ -107,7 +110,11 @@ module MakeFromService (Service_in : Service.S) : S = struct
 
   let query ~index ?count ?source content =
     let size = match count with None -> [] | Some c -> ["size", `Int c] in
-    let source = match source with None -> [] | Some l -> ["_source", `List (List.map (fun s -> `String s) l)] in
+    let source =
+      match source with
+      | None -> []
+      | Some l -> ["_source", `List (List.map (fun s -> `String s) l)]
+    in
     let payload =
       Yojson.Basic.to_string @@ `Assoc (source @ size @ ["query", content])
     in
@@ -153,7 +160,6 @@ module MakeFromService (Service_in : Service.S) : S = struct
       Service.request ~headers ~meth:`PUT ~uri ~payload ()
     in
     Lwt.return @@ Yojson.Safe.from_string response_body
-
 end
 
 module type CONF = sig
@@ -161,10 +167,13 @@ module type CONF = sig
 end
 
 module Make (ServiceConf : Service.CONF) (EsConf : CONF) : S =
-  MakeFromService (
-    Service.Make (ServiceConf)
-                 (struct let name = "es" and host = EsConf.host end)
-  )
+  MakeFromService
+    (Service.Make
+       (ServiceConf)
+       (struct
+         let name = "es"
+         and host = EsConf.host
+       end))
 
 module MakeNoAws (Conf : Service.CONF_NO_AWS) : S =
   MakeFromService (Service.MakeNoAws (Conf))

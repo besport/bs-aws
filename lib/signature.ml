@@ -1,19 +1,16 @@
-
 let debug = Base.Debug.make "signature" "Debug signing process." ["all"]
 
 let hash s =
-  if s = "" then
-    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  if s = ""
+  then "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   else
     Cryptokit.hash_string (Cryptokit.Hash.sha256 ()) s
     |> Cryptokit.transform_string (Cryptokit.Hexa.encode ())
 
-type key = {key : string; credential_scope : string; credential : string }
+type key = {key : string; credential_scope : string; credential : string}
 
 let signing_key credentials date region service =
-  let hash v k =
-    Cryptokit.hash_string (Cryptokit.MAC.hmac_sha256 k) v
-  in
+  let hash v k = Cryptokit.hash_string (Cryptokit.MAC.hmac_sha256 k) v in
   let key =
     "AWS4" ^ credentials.Common.secret_access_key
     |> hash (String.sub date 0 8)
@@ -22,11 +19,11 @@ let signing_key credentials date region service =
   in
   let credential_scope =
     String.concat "/"
-      [String.sub date 0 8; Common.Region.to_string region;
-       service; "aws4_request"]
+      [ String.sub date 0 8
+      ; Common.Region.to_string region
+      ; service; "aws4_request" ]
   in
-  let credential =
-    credentials.Common.access_key_id ^ "/" ^ credential_scope in
+  let credential = credentials.Common.access_key_id ^ "/" ^ credential_scope in
   {key; credential_scope; credential}
 
 let credential key = key.credential
@@ -37,27 +34,27 @@ let sign key sts =
 
 (****)
 
-let canonical_request
-      meth uri query headers ?(unsigned_payload = false) payload =
+let canonical_request meth uri query headers ?(unsigned_payload = false)
+    payload
+  =
   let args =
-    List.map
-      (fun (k, v) -> (k, Base.url_encode v)) query
-    |> List.sort
-         (fun (k1, v1) (k2, v2) ->
-            let c = compare k1 k2 in if c <> 0 then c else compare v1 v2)
+    List.map (fun (k, v) -> k, Base.url_encode v) query
+    |> List.sort (fun (k1, v1) (k2, v2) ->
+           let c = compare k1 k2 in
+           if c <> 0 then c else compare v1 v2)
     |> List.map (fun (k, v) -> k ^ "=" ^ v)
     |> String.concat "&"
   in
-  let headers =
-    List.sort (fun (k1, _) (k2, _) -> compare k1 k2) headers in
+  let headers = List.sort (fun (k1, _) (k2, _) -> compare k1 k2) headers in
   let signed_headers = String.concat ";" (List.map fst headers) in
   let headers = List.map (fun (k, v) -> k ^ ":" ^ v) headers in
   let payload_hash =
-    if unsigned_payload then "UNSIGNED-PAYLOAD" else hash payload in
-  (String.concat "\n"
-     (Base.string_of_meth meth :: uri :: args ::
-      headers @ [""; signed_headers; payload_hash]),
-   signed_headers)
+    if unsigned_payload then "UNSIGNED-PAYLOAD" else hash payload
+  in
+  ( String.concat "\n"
+      ((Base.string_of_meth meth :: uri :: args :: headers)
+      @ [""; signed_headers; payload_hash])
+  , signed_headers )
 
 let string_to_sign date key canonical_request =
   String.concat "\n"
@@ -75,10 +72,11 @@ let sign_request credentials ~service region req =
   let headers =
     match credentials.Common.session_token with
     | Some token -> ("x-amz-security-token", token) :: headers
-    | None       -> headers
+    | None -> headers
   in
-  let (creq, signed_headers) =
-    canonical_request meth uri query headers payload in
+  let creq, signed_headers =
+    canonical_request meth uri query headers payload
+  in
   if debug () then Format.eprintf "Canonical request:@.%s@." creq;
   let key = signing_key credentials date region service in
   let sts = string_to_sign date key creq in
@@ -87,28 +85,31 @@ let sign_request credentials ~service region req =
   let authz = authorization_header key signed_headers signature in
   {req with Base.headers = ("authorization", authz) :: headers}
 
-let sign_request_using_query_parameters
-    credentials ~service region ~expiration ?unsigned_payload req =
+let sign_request_using_query_parameters credentials ~service region ~expiration
+    ?unsigned_payload req
+  =
   let {Base.meth; uri; query; headers; payload} = req in
   let date = Base.to_ISO8601 (Unix.gettimeofday ()) in
   let key = signing_key credentials date region service in
-  let (_, signed_headers) =
-    canonical_request meth uri query headers ?unsigned_payload payload in
+  let _, signed_headers =
+    canonical_request meth uri query headers ?unsigned_payload payload
+  in
   let query =
-    ("X-Amz-Algorithm", "AWS4-HMAC-SHA256") ::
-    ("X-Amz-Credential", key.credential) ::
-    ("X-Amz-Date", date) ::
-    ("X-Amz-Expires", string_of_int expiration) ::
-    ("X-Amz-SignedHeaders", signed_headers) ::
-    query
+    ("X-Amz-Algorithm", "AWS4-HMAC-SHA256")
+    :: ("X-Amz-Credential", key.credential)
+    :: ("X-Amz-Date", date)
+    :: ("X-Amz-Expires", string_of_int expiration)
+    :: ("X-Amz-SignedHeaders", signed_headers)
+    :: query
   in
   let query =
     match credentials.Common.session_token with
     | Some token -> ("X-Amz-Security-Token", token) :: query
-    | None       -> query
+    | None -> query
   in
   let creq, _ =
-    canonical_request meth uri query headers ?unsigned_payload payload in
+    canonical_request meth uri query headers ?unsigned_payload payload
+  in
   if debug () then Format.eprintf "Canonical request:@.%s@." creq;
   let sts = string_to_sign date key creq in
   if debug () then Format.eprintf "String to sign:%s@." sts;

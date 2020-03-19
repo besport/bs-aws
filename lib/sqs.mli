@@ -1,33 +1,37 @@
 module Make (Conf : Service.CONF) : sig
-
   module Service : Service.S
 
-  val create_queue :
-    ?delay_seconds:int ->
-    ?maximum_message_size:int ->
-    ?message_retention_period:int ->
-    ?policy:Yojson.Safe.t ->
-    ?receive_message_wait_time_seconds:int ->
-    ?redrive_policy:Yojson.Safe.t ->
-    ?visibility_timeout:int ->
-    ?fifo_queue:bool ->
-    ?content_based_deduplication:bool ->
-    queue_name:string -> unit -> string Lwt.t
+  val create_queue
+    :  ?delay_seconds:int
+    -> ?maximum_message_size:int
+    -> ?message_retention_period:int
+    -> ?policy:Yojson.Safe.t
+    -> ?receive_message_wait_time_seconds:int
+    -> ?redrive_policy:Yojson.Safe.t
+    -> ?visibility_timeout:int
+    -> ?fifo_queue:bool
+    -> ?content_based_deduplication:bool
+    -> queue_name:string
+    -> unit
+    -> string Lwt.t
 
-  val set_queue_attributes :
-    ?delay_seconds:int ->
-    ?maximum_message_size:int ->
-    ?message_retention_period:int ->
-    ?policy:Yojson.Safe.t ->
-    ?receive_message_wait_time_seconds:int ->
-    ?redrive_policy:Yojson.Safe.t ->
-    ?visibility_timeout:int ->
-    ?content_based_deduplication:bool ->
-    queue_url:string -> unit -> unit Lwt.t
+  val set_queue_attributes
+    :  ?delay_seconds:int
+    -> ?maximum_message_size:int
+    -> ?message_retention_period:int
+    -> ?policy:Yojson.Safe.t
+    -> ?receive_message_wait_time_seconds:int
+    -> ?redrive_policy:Yojson.Safe.t
+    -> ?visibility_timeout:int
+    -> ?content_based_deduplication:bool
+    -> queue_url:string
+    -> unit
+    -> unit Lwt.t
 
   module Attribute : sig
     type set
     type t
+
     val all : t
     val approximate_number_of_messages : t
     val approximate_number_of_messages_delayed : t
@@ -44,8 +48,10 @@ module Make (Conf : Service.CONF) : sig
     val visibility_timeout : t
     val fifo_queue : t
     val content_based_deduplication : t
+
     module Get : sig
       type 'a t = set -> 'a
+
       val approximate_number_of_messages : int t
       val approximate_number_of_messages_delayed : int t
       val approximate_number_of_messages_not_visible : int t
@@ -64,28 +70,33 @@ module Make (Conf : Service.CONF) : sig
     end
   end
 
-  val get_queue_attributes :
-    attributes:Attribute.t list -> queue_url:string -> unit ->
-    Attribute.set Lwt.t
+  val get_queue_attributes
+    :  attributes:Attribute.t list
+    -> queue_url:string
+    -> unit
+    -> Attribute.set Lwt.t
 
-  val delete_queue :
-    queue_url:string -> unit -> unit Lwt.t
+  val delete_queue : queue_url:string -> unit -> unit Lwt.t
 
-  val send_message :
-    queue_url:string -> message_body:string -> unit -> unit Lwt.t
+  val send_message
+    :  queue_url:string
+    -> message_body:string
+    -> unit
+    -> unit Lwt.t
 
-  type message =
-    { message_id : string;
-      receipt_handle : string;
-      body : string }
+  type message = {message_id : string; receipt_handle : string; body : string}
 
-  val receive_message :
-    ?max_number_of_messages:int ->
-    ?visibility_timeout:int ->
-    ?wait_time_seconds:int ->
-    queue_url:string -> unit -> message list Lwt.t
+  val receive_message
+    :  ?max_number_of_messages:int
+    -> ?visibility_timeout:int
+    -> ?wait_time_seconds:int
+    -> queue_url:string
+    -> unit
+    -> message list Lwt.t
 
-  val delete_message :
-    queue_url:string -> receipt_handle:string -> unit -> unit Lwt.t
-
+  val delete_message
+    :  queue_url:string
+    -> receipt_handle:string
+    -> unit
+    -> unit Lwt.t
 end

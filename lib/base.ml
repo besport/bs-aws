@@ -6,7 +6,7 @@ let url_encode s =
   for i = 0 to l - 1 do
     let c = s.[i] in
     match c with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '-' | '_' | '.' | '~' ->
+    | 'A' .. 'Z' | 'a' .. 'z' | '0' .. '9' | '-' | '_' | '.' | '~' ->
         Buffer.add_char b c
     | _ ->
         let hex = "0123456789ABCDEF" in
@@ -22,10 +22,9 @@ let encode_form_string s =
   for i = 0 to l - 1 do
     let c = s.[i] in
     match c with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '-' | '_' | '.' | '*' ->
+    | 'A' .. 'Z' | 'a' .. 'z' | '0' .. '9' | '-' | '_' | '.' | '*' ->
         Buffer.add_char b c
-    | ' ' ->
-        Buffer.add_char b '+'
+    | ' ' -> Buffer.add_char b '+'
     | _ ->
         let hex = "0123456789ABCDEF" in
         Buffer.add_char b '%';
@@ -38,11 +37,10 @@ let escape s =
   let b = Buffer.create 128 in
   String.iter
     (fun c ->
-       match c with
-         '\000'..'\031' | '\127'..'\255' ->
-            Buffer.add_string b (Printf.sprintf "\\x%02X" (Char.code c))
-       | _ ->
-            Buffer.add_char b c)
+      match c with
+      | '\000' .. '\031' | '\127' .. '\255' ->
+          Buffer.add_string b (Printf.sprintf "\\x%02X" (Char.code c))
+      | _ -> Buffer.add_char b c)
     s;
   Buffer.contents b
 
@@ -50,79 +48,77 @@ type meth = [`GET | `POST | `PUT | `DELETE | `HEAD]
 
 let string_of_meth m =
   match m with
-    `GET    -> "GET"
-  | `POST   -> "POST"
-  | `PUT    -> "PUT"
+  | `GET -> "GET"
+  | `POST -> "POST"
+  | `PUT -> "PUT"
   | `DELETE -> "DELETE"
-  | `HEAD   -> "HEAD"
+  | `HEAD -> "HEAD"
 
 type request =
-  { secure : bool;
-    meth : meth;
-    uri : string;
-    query : (string * string) list;
-    headers : (string * string) list;
-    payload : string }
+  { secure : bool
+  ; meth : meth
+  ; uri : string
+  ; query : (string * string) list
+  ; headers : (string * string) list
+  ; payload : string }
 
-let request
-      ?(secure=true) ~meth ~host ~uri
-      ?(query = []) ?(headers = []) ?(payload = "") () =
-  {secure; meth; uri; query; payload;
-   headers = ("host", host) :: headers}
+let request ?(secure = true) ~meth ~host ~uri ?(query = []) ?(headers = [])
+    ?(payload = "") ()
+  =
+  {secure; meth; uri; query; payload; headers = ("host", host) :: headers}
 
 let print_curl_request {secure; meth; uri; query; headers; payload} =
   let host = try List.assoc "host" headers with Not_found -> "<unknown>" in
   Format.eprintf "curl '%s://%s%s'"
-    (if secure then "https" else "http") host uri;
-  if query <> [] then begin
+    (if secure then "https" else "http")
+    host uri;
+  if query <> []
+  then (
     Format.eprintf "'?";
     List.iteri
       (fun i (f, v) ->
-         if i <> 0 then Format.eprintf "&";
-         Format.eprintf "%s=%s" (url_encode f) (url_encode v))
+        if i <> 0 then Format.eprintf "&";
+        Format.eprintf "%s=%s" (url_encode f) (url_encode v))
       query;
-    Format.eprintf "'"
-  end;
-  List.iter (fun (k, v) -> Format.eprintf " -H '%s: %s'" k v)
-    headers;
-  begin match meth with
-    `GET  -> ()
+    Format.eprintf "'");
+  List.iter (fun (k, v) -> Format.eprintf " -H '%s: %s'" k v) headers;
+  (match meth with
+  | `GET -> ()
   | `POST -> Format.eprintf " --data-binary '%s'" (escape payload)
-  | m -> Format.eprintf " -X %s" (string_of_meth m)
-  end;
+  | m -> Format.eprintf " -X %s" (string_of_meth m));
   Format.eprintf "@."
 
 (****)
 
-let to_ISO8601 ?(extended=false) t =
+let to_ISO8601 ?(extended = false) t =
   let open Unix in
   let t = gmtime t in
-  if extended then
-    Printf.sprintf "%04d-%02d-%02dT%02d:%02d:%02dZ"
-      (t.tm_year + 1900) (t.tm_mon + 1) t.tm_mday t.tm_hour t.tm_min t.tm_sec
+  if extended
+  then
+    Printf.sprintf "%04d-%02d-%02dT%02d:%02d:%02dZ" (t.tm_year + 1900)
+      (t.tm_mon + 1) t.tm_mday t.tm_hour t.tm_min t.tm_sec
   else
-    Printf.sprintf "%04d%02d%02dT%02d%02d%02dZ"
-      (t.tm_year + 1900) (t.tm_mon + 1) t.tm_mday t.tm_hour t.tm_min t.tm_sec
+    Printf.sprintf "%04d%02d%02dT%02d%02d%02dZ" (t.tm_year + 1900)
+      (t.tm_mon + 1) t.tm_mday t.tm_hour t.tm_min t.tm_sec
 
 let timegm =
-  let days =
-    [|0; 31; 59; 90; 120; 151; 181; 212; 243; 273; 304; 334|] in
+  let days = [|0; 31; 59; 90; 120; 151; 181; 212; 243; 273; 304; 334|] in
   fun year mon mday hour min sec ->
-    let r = (year - 1970) * 365 + days.(mon - 1) in
-    let r = r + (year - 1968) / 4 in
-    let r = r - (year - 1900) / 100 in
-    let r = r + (year - 1600) / 400 in
+    let r = ((year - 1970) * 365) + days.(mon - 1) in
+    let r = r + ((year - 1968) / 4) in
+    let r = r - ((year - 1900) / 100) in
+    let r = r + ((year - 1600) / 400) in
     let r =
-      if mon <= 2 &&
-         (year mod 4 = 0) && (year mod 100 <> 0 || year mod 400 = 0)
-      then r - 1 else r in
+      if mon <= 2 && year mod 4 = 0 && (year mod 100 <> 0 || year mod 400 = 0)
+      then r - 1
+      else r
+    in
     let r = float (r + mday - 1) in
-    let r = 24. *. r +. float hour in
-    let r = 60. *. r +. float min in
-    60. *. r +. float sec
+    let r = (24. *. r) +. float hour in
+    let r = (60. *. r) +. float min in
+    (60. *. r) +. float sec
 
-let from_ISO8601 t =
-  Scanf.sscanf t "%04d-%02d-%02dT%02d:%02d:%02dZ" timegm
+let from_ISO8601 t = Scanf.sscanf t "%04d-%02d-%02dT%02d:%02d:%02dZ" timegm
 
 (*
 let _ =
@@ -142,17 +138,16 @@ let _ =
 (****)
 
 module Debug = struct
-  type t = { mutable state : bool; name : string; desc : string }
+  type t = {mutable state : bool; name : string; desc : string}
 
   let debugs = ref []
   let association = Hashtbl.create 11
 
   let make s desc l =
     let d =
-      try
-        List.assoc s !debugs
+      try List.assoc s !debugs
       with Not_found ->
-        let d = { state = false; name = s; desc = desc } in
+        let d = {state = false; name = s; desc} in
         debugs := (s, d) :: !debugs;
         d
     in
@@ -162,24 +157,24 @@ module Debug = struct
   let print () =
     Format.eprintf "Debug options:@.";
     List.iter
-      (fun (_, d) -> Format.eprintf "    %s: %s@." d.name d.desc) !debugs;
+      (fun (_, d) -> Format.eprintf "    %s: %s@." d.name d.desc)
+      !debugs;
     exit 1
 
   let rec toggle s b =
-    if s = "help" || not (List.mem_assoc s !debugs) then
-      print ()
+    if s = "help" || not (List.mem_assoc s !debugs)
+    then print ()
     else
       try
         let d = List.assoc s !debugs in
-        if not d.state then begin
+        if not d.state
+        then (
           d.state <- b;
-          List.iter (fun x -> toggle x b) (Hashtbl.find_all association s)
-        end
+          List.iter (fun x -> toggle x b) (Hashtbl.find_all association s))
       with Not_found -> ()
 
   let enable s = toggle s true
   let disable s = toggle s false
-
   let all = make "all" "Enable all debugging options." []
 end
 
@@ -188,57 +183,45 @@ end
 module Xml = struct
   let text i =
     match Xmlm.peek i with
-    | `Data d -> ignore (Xmlm.input i); d
+    | `Data d ->
+        ignore (Xmlm.input i);
+        d
     | `El_end -> ""
-    | _       -> assert false
-
+    | _ -> assert false
 
   let repeat f i =
     let rec repeat_rec f i acc =
       match Xmlm.peek i with
-        `El_end -> List.rev acc
-      | _       -> repeat_rec f i (f i :: acc)
+      | `El_end -> List.rev acc
+      | _ -> repeat_rec f i (f i :: acc)
     in
     repeat_rec f i []
 
   let element_end i =
-    match Xmlm.input i with
-    | `El_end -> ()
-    | _       -> assert false
+    match Xmlm.input i with `El_end -> () | _ -> assert false
 
   let element f i =
     match Xmlm.input i with
     | `El_start ((_, nm), _) ->
-      let x = f i in
-      element_end i;
-      (nm, x)
-    | _ ->
-      assert false
+        let x = f i in
+        element_end i; nm, x
+    | _ -> assert false
 
   let field i = element text i
-
   let record = repeat field
 end
 
 module Param = struct
-  let string k v rem =
-    match v with
-      Some v -> (k, v) :: rem
-    | _      -> rem
+  let string k v rem = match v with Some v -> (k, v) :: rem | _ -> rem
 
   let int k v rem =
-    match v with
-      Some v -> (k, string_of_int v) :: rem
-    | _      -> rem
+    match v with Some v -> (k, string_of_int v) :: rem | _ -> rem
 
   let bool k v rem =
     match v with
-      Some true  -> (k, "true") :: rem
+    | Some true -> (k, "true") :: rem
     | Some false -> (k, "false") :: rem
-    | _          -> rem
+    | _ -> rem
 
-  let custom k f v rem =
-    match v with
-      Some v -> (k, f v) :: rem
-    | _      -> rem
+  let custom k f v rem = match v with Some v -> (k, f v) :: rem | _ -> rem
 end

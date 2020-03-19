@@ -1,12 +1,14 @@
-
 type credentials =
-  { mutable access_key_id : string;
-    mutable secret_access_key : string;
-    mutable session_token : string option }
+  { mutable access_key_id : string
+  ; mutable secret_access_key : string
+  ; mutable session_token : string option }
 
-val credentials :
-  access_key_id:string -> secret_access_key:string -> ?session_token:string ->
-  unit -> credentials
+val credentials
+  :  access_key_id:string
+  -> secret_access_key:string
+  -> ?session_token:string
+  -> unit
+  -> credentials
 
 module Region : sig
   type t =
@@ -25,10 +27,11 @@ module Region : sig
 end
 
 type error =
-  { request_id : string;
-    code : int; (* HTTP error code *)
-    typ : string;
-    message : string }
+  { request_id : string
+  ; code : int
+  ; (* HTTP error code *)
+    typ : string
+  ; message : string }
 
 exception Error of error
 
