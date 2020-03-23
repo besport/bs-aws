@@ -4,6 +4,7 @@ end
 
 module Of_json : sig
   val string : string -> Yojson.Basic.t -> string
+  val strings : string -> Yojson.Basic.t -> string list
   val float : string -> Yojson.Basic.t -> float
   val int : string -> Yojson.Basic.t -> int
 end

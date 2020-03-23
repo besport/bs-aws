@@ -15,6 +15,7 @@ module Of_json = struct
       raise exn
 
   let string = try_with to_string
+  let strings = try_with (fun j -> List.map to_string @@ to_list j)
   let float = try_with to_float
   let int = try_with to_int
 end
