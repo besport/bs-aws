@@ -167,7 +167,7 @@ module Debug = struct
     else
       try
         let d = List.assoc s !debugs in
-        if not d.state
+        if (not d.state) = b
         then (
           d.state <- b;
           List.iter (fun x -> toggle x b) (Hashtbl.find_all association s))
