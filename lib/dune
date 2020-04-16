@@ -1,7 +1,7 @@
 (library
  (name bs_aws)
  (public_name bs-aws)
- (libraries lwt lwt_ppx cohttp-lwt-unix xmlm ezxmlm yojson cryptokit logs)
+ (libraries lwt cohttp-lwt-unix xmlm ezxmlm yojson cryptokit logs)
  (preprocess (pps lwt_ppx))
  (private_modules Signature)
  (modules Base Credentials Service Lambda Rds S3 Signature Sqs Common
