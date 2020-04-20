@@ -23,6 +23,7 @@ module type S = sig
   val delete_index : string -> unit Lwt.t
   val bulk : Yojson.Basic.t list -> Yojson.Safe.t Lwt.t
   val reindex : ?wait_for_completion:bool -> string -> string -> unit Lwt.t
+  val count : index:string -> Yojson.Basic.t -> int Lwt.t
 
   module Search : sig
     type hit =

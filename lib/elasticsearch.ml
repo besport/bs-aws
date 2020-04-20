@@ -34,6 +34,7 @@ module type S = sig
   val delete_index : string -> unit Lwt.t
   val bulk : Yojson.Basic.t list -> Yojson.Safe.t Lwt.t
   val reindex : ?wait_for_completion:bool -> string -> string -> unit Lwt.t
+  val count : index:string -> Yojson.Basic.t -> int Lwt.t
 
   module Search : sig
     type hit =
@@ -132,6 +133,23 @@ module MakeFromService (Service_in : Service.S) : S = struct
       Service.request ~meth:`POST ~headers:json_headers ~payload ~uri ~query ()
     in
     Lwt.return @@ Log.info (fun m -> m "reindexing launched on /%s" dest)
+
+  let count ~index content =
+    let payload = Yojson.Basic.to_string @@ `Assoc ["query", content] in
+    let headers = json_headers in
+    Log.debug (fun m -> m "/%s/_search %s" index payload);
+    let%lwt response_body, _ =
+      Service.request ~headers ~meth:`POST ~payload
+        ~uri:(sprintf "/%s/_search" index)
+        ()
+    in
+    Log.debug (fun m -> m "response: %s" response_body);
+    let hits =
+      let response = Yojson.Basic.from_string response_body in
+      try Of_json.int "count" response
+      with exn -> (*TODO: print json*) raise exn
+    in
+    Lwt.return hits
 
   module Search = struct
     type hit =
