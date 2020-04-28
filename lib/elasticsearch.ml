@@ -14,8 +14,9 @@ module Of_json = struct
       prerr_string @@ Yojson.Basic.to_string j;
       raise exn
 
+  let list f = try_with (fun j -> List.map f @@ to_list j)
   let string = try_with to_string
-  let strings = try_with (fun j -> List.map to_string @@ to_list j)
+  let strings = list to_string
   let float = try_with to_float
   let int = try_with to_int
 end

@@ -3,6 +3,7 @@ module type CONF = sig
 end
 
 module Of_json : sig
+  val list : (Yojson.Basic.t -> 'a) -> string -> Yojson.Basic.t -> 'a list
   val string : string -> Yojson.Basic.t -> string
   val strings : string -> Yojson.Basic.t -> string list
   val float : string -> Yojson.Basic.t -> float
