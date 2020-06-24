@@ -38,6 +38,7 @@ module type S = sig
       :  index:string
       -> ?count:int
       -> ?source:string list
+      -> ?request_cache:bool
       -> Yojson.Basic.t
       -> hit list Lwt.t
   end

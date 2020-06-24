@@ -49,6 +49,7 @@ module type S = sig
       :  index:string
       -> ?count:int
       -> ?source:string list
+      -> ?request_cache:bool
       -> Yojson.Basic.t
       -> hit list Lwt.t
   end
@@ -168,7 +169,7 @@ module MakeFromService (Service_in : Service.S) : S = struct
       ; _score = float "_score" j
       ; _source = Yojson.Basic.Util.member "_source" j }
 
-    let query ~index ?count ?source content =
+    let query ~index ?count ?source ?(request_cache = false) content =
       let size = match count with None -> [] | Some c -> ["size", `Int c] in
       let source =
         match source with
@@ -178,7 +179,10 @@ module MakeFromService (Service_in : Service.S) : S = struct
       let payload =
         Yojson.Basic.to_string @@ `Assoc ((source :: size) @ ["query", content])
       in
-      let headers = json_headers in
+      let request_cache_headers =
+        if request_cache then ["request_cache", "true"] else []
+      in
+      let headers = request_cache_headers @ json_headers in
       Log.debug (fun m -> m "/%s/_search %s" index payload);
       let%lwt response_body, _ =
         Service.request ~headers ~meth:`POST ~payload
