@@ -26,7 +26,7 @@ module Make (Conf : Service.CONF) : sig
     -> settings:Yojson.Safe.t
     -> ?user_metadata:(string * string) list
     -> ?billing_tags_source:[`JOB_TEMPLATE | `PRESET | `QUEUE]
-    -> ?acceleration_settings:[`DISABLED | `ENABLED]
+    -> ?acceleration_settings:[`DISABLED | `ENABLED | `PREFERRED]
     -> ?status_update_interval:[ `SECONDS_10
                                | `SECONDS_12
                                | `SECONDS_15

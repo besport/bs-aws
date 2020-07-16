@@ -117,8 +117,13 @@ module Make (Conf : Service.CONF) = struct
            billing_tags_source
       |> opt_add "accelerationSettings"
            (fun a ->
-             `String
-               (match a with `DISABLED -> "DISABLED" | `ENABLED -> "ENABLED"))
+             `Assoc
+               [ ( "mode"
+                 , `String
+                     (match a with
+                     | `DISABLED -> "DISABLED"
+                     | `ENABLED -> "ENABLED"
+                     | `PREFERRED -> "PREFERRED") ) ])
            acceleration_settings
       |> opt_add "statusUpdateInterval"
            (fun i ->
