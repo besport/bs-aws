@@ -52,6 +52,14 @@ module type S = sig
       -> ?request_cache:bool
       -> Yojson.Basic.t
       -> hit list Lwt.t
+
+    val aggs
+      :  index:string
+      -> ?count:int
+      -> ?source:string list
+      -> ?request_cache:bool
+      -> Yojson.Basic.t
+      -> (hit list * Yojson.Basic.t) Lwt.t
   end
 
   val template_exists : string -> bool Lwt.t
@@ -169,7 +177,7 @@ module MakeFromService (Service_in : Service.S) : S = struct
       ; _score = float "_score" j
       ; _source = Yojson.Basic.Util.member "_source" j }
 
-    let query ~index ?count ?source ?(request_cache = false) content =
+    let request ~index ?count ?source ?(request_cache = false) title content =
       let size = match count with None -> [] | Some c -> ["size", `Int c] in
       let source =
         match source with
@@ -177,19 +185,25 @@ module MakeFromService (Service_in : Service.S) : S = struct
         | Some l -> "_source", `List (List.map (fun s -> `String s) l)
       in
       let payload =
-        Yojson.Basic.to_string @@ `Assoc ((source :: size) @ ["query", content])
+        Yojson.Basic.to_string @@ `Assoc ((source :: size) @ [title, content])
       in
       let request_cache_headers =
         if request_cache then ["request_cache", "true"] else []
       in
       let headers = request_cache_headers @ json_headers in
       Log.debug (fun m -> m "/%s/_search %s" index payload);
-      let%lwt response_body, _ =
+      let%lwt response_body, response_headers =
         Service.request ~headers ~meth:`POST ~payload
           ~uri:(sprintf "/%s/_search" index)
           ()
       in
       Log.debug (fun m -> m "response: %s" response_body);
+      Lwt.return (response_body, response_headers)
+
+    let query ~index ?count ?source ?request_cache content =
+      let%lwt response_body, _ =
+        request ~index ?count ?source ?request_cache "query" content
+      in
       let hits =
         let response = Yojson.Basic.from_string response_body in
         try
@@ -199,6 +213,22 @@ module MakeFromService (Service_in : Service.S) : S = struct
         with exn -> (*TODO: print json*) raise exn
       in
       Lwt.return hits
+
+    let aggs ~index ?count ?source ?request_cache content =
+      let%lwt response_body, _ =
+        request ~index ?count ?source ?request_cache "aggs" content
+      in
+      let response = Yojson.Basic.from_string response_body in
+      let hits, aggregations =
+        try
+          let open Yojson.Basic.Util in
+          let hits = List.map hit_of_json @@
+                       to_list @@ member "hits" @@ member "hits" response
+          and aggregations = member "aggregations" response
+          in hits, aggregations
+        with exn -> (*TODO: print json*) raise exn
+      in
+      Lwt.return (hits, aggregations)
   end
 
   let template_exists template =

@@ -41,6 +41,14 @@ module type S = sig
       -> ?request_cache:bool
       -> Yojson.Basic.t
       -> hit list Lwt.t
+
+    val aggs
+      :  index:string
+      -> ?count:int
+      -> ?source:string list
+      -> ?request_cache:bool
+      -> Yojson.Basic.t
+      -> (hit list * Yojson.Basic.t) Lwt.t
   end
 
   val template_exists : string -> bool Lwt.t
