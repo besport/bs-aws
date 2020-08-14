@@ -147,10 +147,10 @@ module MakeFromService (Service_in : Service.S) : S = struct
   let count ~index content =
     let payload = Yojson.Basic.to_string @@ `Assoc ["query", content] in
     let headers = json_headers in
-    Log.debug (fun m -> m "/%s/_search %s" index payload);
+    Log.debug (fun m -> m "/%s/_count %s" index payload);
     let%lwt response_body, _ =
       Service.request ~headers ~meth:`POST ~payload
-        ~uri:(sprintf "/%s/_search" index)
+        ~uri:(sprintf "/%s/_count" index)
         ()
     in
     Log.debug (fun m -> m "response: %s" response_body);
