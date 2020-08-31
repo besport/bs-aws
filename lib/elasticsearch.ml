@@ -12,6 +12,7 @@ module Of_json = struct
     with Type_error _ as exn ->
       prerr_string @@ "error while parsing field \"" ^ field ^ "\":\n";
       prerr_string @@ Yojson.Basic.to_string j;
+      flush stdout;
       raise exn
 
   let list f = try_with (fun j -> List.map f @@ to_list j)
