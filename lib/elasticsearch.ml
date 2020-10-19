@@ -61,6 +61,16 @@ module type S = sig
       -> ?request_cache:bool
       -> Yojson.Basic.t
       -> (hit list * Yojson.Basic.t) Lwt.t
+
+    val hit_bucket_agg
+      :  index:string
+      -> ?count:int
+      -> ?source:string list
+      -> ?request_cache:bool
+      -> Yojson.Basic.t
+      -> ?subagg:string
+      -> (string * (string * json) list)
+      -> (hit list * (json * hit list) list) Lwt.t
   end
 
   val template_exists : string -> bool Lwt.t
@@ -178,15 +188,15 @@ module MakeFromService (Service_in : Service.S) : S = struct
       ; _score = float "_score" j
       ; _source = Yojson.Basic.Util.member "_source" j }
 
-    let request ~index ?count ?source ?(request_cache = false) title content =
+    let request ~index ?count ?source ?(request_cache = false) content =
       let size = match count with None -> [] | Some c -> ["size", `Int c] in
       let source =
         match source with
-        | None -> "_source", `Bool false
-        | Some l -> "_source", `List (List.map (fun s -> `String s) l)
+        | None -> []
+        | Some l -> ["_source", `List (List.map (fun s -> `String s) l)]
       in
       let payload =
-        Yojson.Basic.to_string @@ `Assoc ((source :: size) @ [title, content])
+        Yojson.Basic.to_string @@ `Assoc (source @ size @ content)
       in
       let request_cache_headers =
         if request_cache then ["request_cache", "true"] else []
@@ -203,7 +213,7 @@ module MakeFromService (Service_in : Service.S) : S = struct
 
     let query ~index ?count ?source ?request_cache content =
       let%lwt response_body, _ =
-        request ~index ?count ?source ?request_cache "query" content
+        request ~index ?count ?source ?request_cache ["query", content]
       in
       let hits =
         let response = Yojson.Basic.from_string response_body in
@@ -217,7 +227,7 @@ module MakeFromService (Service_in : Service.S) : S = struct
 
     let aggs ~index ?count ?source ?request_cache content =
       let%lwt response_body, _ =
-        request ~index ?count ?source ?request_cache "aggs" content
+        request ~index ?count ?source ?request_cache ["aggs", content]
       in
       let response = Yojson.Basic.from_string response_body in
       let hits, aggregations =
@@ -230,6 +240,40 @@ module MakeFromService (Service_in : Service.S) : S = struct
         with exn -> (*TODO: print json*) raise exn
       in
       Lwt.return (hits, aggregations)
+
+    let hit_bucket_agg ~index ?count ?source ?request_cache query
+    ?subagg (agg_name, agg) =
+      let%lwt response_body, _ =
+        request ~index ?count ?source ?request_cache
+          ["query", query; "aggs", `Assoc [agg_name, `Assoc agg]]
+      in
+      let response = Yojson.Basic.from_string response_body in
+      let query_hits, buckets =
+        try
+          let open Yojson.Basic.Util in
+          let hits = List.map hit_of_json @@
+                       to_list @@ member "hits" @@ member "hits" response
+          and aggregations = member "aggregations" response
+          in
+          let parse_bucket b =
+            let hit_container = match subagg with
+              | None -> b
+              | Some s -> member s b
+            in
+            let key = member "key" b
+            and hits = List.map hit_of_json @@
+                         to_list @@ member "hits" @@ member "hits" hit_container
+            in key, hits
+          in
+          let buckets = List.map parse_bucket @@
+                          to_list @@
+                            member "buckets" @@
+                            member agg_name aggregations
+          in
+          hits, buckets
+        with exn -> (*TODO: print json*) raise exn
+      in
+      Lwt.return (query_hits, buckets)
   end
 
   let template_exists template =

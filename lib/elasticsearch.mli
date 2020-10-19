@@ -49,6 +49,16 @@ module type S = sig
       -> ?request_cache:bool
       -> Yojson.Basic.t
       -> (hit list * Yojson.Basic.t) Lwt.t
+
+    val hit_bucket_agg
+      :  index:string
+      -> ?count:int
+      -> ?source:string list
+      -> ?request_cache:bool
+      -> Yojson.Basic.t
+      -> ?subagg:string
+      -> (string * (string * json) list)
+      -> (hit list * (json * hit list) list) Lwt.t
   end
 
   val template_exists : string -> bool Lwt.t
