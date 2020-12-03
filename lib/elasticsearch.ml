@@ -10,8 +10,8 @@ module Of_json = struct
   let try_with transform field j =
     try transform @@ member field j
     with Type_error _ as exn ->
-      prerr_string @@ "error while parsing field \"" ^ field ^ "\":\n";
-      prerr_string @@ Yojson.Basic.to_string j;
+      prerr_string @@ "error while parsing field \"" ^ field ^ "\": \n";
+      prerr_string @@ Yojson.Basic.to_string j ^ "\n";
       flush stdout;
       raise exn
 
