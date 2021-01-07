@@ -4,7 +4,7 @@
  (libraries lwt cohttp-lwt-unix xmlm ezxmlm yojson cryptokit logs)
  (preprocess (pps lwt_ppx))
  (private_modules Signature)
- (modules Base Credentials Service Lambda Rds S3 Signature Sqs Common
+ (modules Base Credentials Service Lambda Rds S3 Signature Sqs Ssm Common
           Elastic_transcoder Mediaconvert Request Ses Sns Elasticsearch Cloudwatch)
  (flags (:standard -w -9))
 )

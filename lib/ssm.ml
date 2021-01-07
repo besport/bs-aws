@@ -50,7 +50,12 @@ module Make (Conf : Service.CONF) = struct
       |> opt_add "NextToken" (fun s -> `String s) next_token
     in
     let payload = Yojson.Safe.to_string (`Assoc payload) in
-    let headers = [ "X-Amz-Target", "AmazonSSM.GetParametersByPath" ] in
+    let headers =
+      [
+        "x-amz-target", "AmazonSSM.GetParametersByPath"
+      ; "content-type", "application/x-amz-json-1.1"
+      ]
+    in
     let%lwt res, _ = Service.request ~meth:`POST ~uri ~headers ~payload () in
     let res = Yojson.Safe.from_string res in
     let open Yojson.Safe.Util in
