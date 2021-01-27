@@ -8,6 +8,7 @@ module Of_json : sig
   val strings : string -> Yojson.Basic.t -> string list
   val float : string -> Yojson.Basic.t -> float
   val int : string -> Yojson.Basic.t -> int
+  val option : (Yojson.Basic.t -> 'a) -> Yojson.Basic.t -> 'a option
 end
 
 module type S = sig

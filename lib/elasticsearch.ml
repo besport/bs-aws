@@ -20,6 +20,7 @@ module Of_json = struct
   let strings = list to_string
   let float = try_with to_float
   let int = try_with to_int
+  let option f = function `Null -> None | j -> Some (f j)
 end
 
 module type S = sig
