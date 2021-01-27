@@ -63,7 +63,17 @@ module type S = sig
       -> ?request_cache:bool
       -> Yojson.Basic.t
       -> ?subagg:string
-      -> (string * (string * json) list)
+      -> string * (string * json) list
+      -> (hit list * (json * hit list) list) Lwt.t
+
+    val hit_bucket_aggs
+      :  index:string
+      -> ?count:int
+      -> ?source:string list
+      -> ?request_cache:bool
+      -> Yojson.Basic.t
+      -> ?subagg:string
+      -> (string * (string * json) list) list
       -> (hit list * (json * hit list) list) Lwt.t
   end
 
