@@ -70,7 +70,17 @@ module type S = sig
       -> ?request_cache:bool
       -> Yojson.Basic.t
       -> ?subagg:string
-      -> (string * (string * json) list)
+      -> string * (string * json) list
+      -> (hit list * (json * hit list) list) Lwt.t
+
+    val hit_bucket_aggs
+      :  index:string
+      -> ?count:int
+      -> ?source:string list
+      -> ?request_cache:bool
+      -> Yojson.Basic.t
+      -> ?subagg:string
+      -> (string * (string * json) list) list
       -> (hit list * (json * hit list) list) Lwt.t
   end
 
@@ -127,9 +137,7 @@ module MakeFromService (Service_in : Service.S) : S = struct
 
   let delete_index index =
     Log.info (fun m -> m "deleting index /%s" index);
-    let%lwt response, _ =
-      Service.request ~meth:`DELETE ~uri:("/" ^ index) ()
-    in
+    let%lwt response, _ = Service.request ~meth:`DELETE ~uri:("/" ^ index) () in
     Lwt.return @@ Log.info @@ fun m -> m "deleted index /%s: %s" index response
 
   let bulk jsons =
@@ -234,16 +242,18 @@ module MakeFromService (Service_in : Service.S) : S = struct
       let hits, aggregations =
         try
           let open Yojson.Basic.Util in
-          let hits = List.map hit_of_json @@
-                       to_list @@ member "hits" @@ member "hits" response
-          and aggregations = member "aggregations" response
-          in hits, aggregations
+          let hits =
+            List.map hit_of_json @@ to_list @@ member "hits"
+            @@ member "hits" response
+          and aggregations = member "aggregations" response in
+          hits, aggregations
         with exn -> (*TODO: print json*) raise exn
       in
       Lwt.return (hits, aggregations)
 
-    let hit_bucket_agg ~index ?count ?source ?request_cache query
-    ?subagg (agg_name, agg) =
+    let hit_bucket_agg ~index ?count ?source ?request_cache query ?subagg
+        (agg_name, agg)
+      =
       let%lwt response_body, _ =
         request ~index ?count ?source ?request_cache
           ["query", query; "aggs", `Assoc [agg_name, `Assoc agg]]
@@ -252,24 +262,61 @@ module MakeFromService (Service_in : Service.S) : S = struct
       let query_hits, buckets =
         try
           let open Yojson.Basic.Util in
-          let hits = List.map hit_of_json @@
-                       to_list @@ member "hits" @@ member "hits" response
-          and aggregations = member "aggregations" response
-          in
+          let hits =
+            List.map hit_of_json @@ to_list @@ member "hits"
+            @@ member "hits" response
+          and aggregations = member "aggregations" response in
           let parse_bucket b =
-            let hit_container = match subagg with
-              | None -> b
-              | Some s -> member s b
+            let hit_container =
+              match subagg with None -> b | Some s -> member s b
             in
             let key = member "key" b
-            and hits = List.map hit_of_json @@
-                         to_list @@ member "hits" @@ member "hits" hit_container
-            in key, hits
+            and hits =
+              List.map hit_of_json @@ to_list @@ member "hits"
+              @@ member "hits" hit_container
+            in
+            key, hits
           in
-          let buckets = List.map parse_bucket @@
-                          to_list @@
-                            member "buckets" @@
-                            member agg_name aggregations
+          let buckets =
+            List.map parse_bucket @@ to_list @@ member "buckets"
+            @@ member agg_name aggregations
+          in
+          hits, buckets
+        with exn -> (*TODO: print json*) raise exn
+      in
+      Lwt.return (query_hits, buckets)
+
+    let hit_bucket_aggs ~index ?count ?source ?request_cache query ?subagg aggs =
+      let%lwt response_body, _ =
+        let aggs = List.map (fun (name, agg) -> name, `Assoc agg) aggs in
+        request ~index ?count ?source ?request_cache
+          ["query", query; "aggs", `Assoc aggs]
+      in
+      let response = Yojson.Basic.from_string response_body in
+      let query_hits, buckets =
+        try
+          let open Yojson.Basic.Util in
+          let hits =
+            List.map hit_of_json @@ to_list @@ member "hits"
+            @@ member "hits" response
+          and aggregations = member "aggregations" response in
+          let parse_bucket b =
+            let hit_container =
+              match subagg with None -> b | Some s -> member s b
+            in
+            let key = member "key" b
+            and hits =
+              List.map hit_of_json @@ to_list @@ member "hits"
+              @@ member "hits" hit_container
+            in
+            key, hits
+          in
+          let bucket agg_name =
+            List.map parse_bucket @@ to_list @@ member "buckets"
+            @@ member agg_name aggregations
+          in
+          let buckets =
+            List.flatten @@ List.map (fun (name, _) -> bucket name) aggs
           in
           hits, buckets
         with exn -> (*TODO: print json*) raise exn
