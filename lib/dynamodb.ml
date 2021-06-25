@@ -13,7 +13,7 @@ module Make (Conf : Service.CONF) = struct
   let describe_table ~table_name =
     let headers =
       [ "x-amz-target", "DynamoDB_20120810.DescribeTable"
-      ; "content-type", "application/x-amz-json-1.1" ]
+      ; "content-type", "application/x-amz-json-1.0" ]
     in
     let body = ["TableName", `String table_name] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
