@@ -5,6 +5,6 @@
  (preprocess (pps lwt_ppx))
  (private_modules Signature)
  (modules Base Credentials Service Lambda Rds S3 Signature Sqs Ssm Common
-          Elastic_transcoder Mediaconvert Request Ses Sns Elasticsearch Cloudwatch)
+          Elastic_transcoder Mediaconvert Request Ses Sns Elasticsearch Cloudwatch Dynamodb)
  (flags (:standard -w -9-16))
 )
