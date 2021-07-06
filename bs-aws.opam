@@ -24,4 +24,5 @@ depends: [
   "ezxmlm"
   "dune" {>= "1.11"}
   "logs"
+  "ppx_yojson_conv" {>= "v0.14.0"}
 ]
