@@ -6,6 +6,8 @@ type credentials =
 let credentials ~access_key_id ~secret_access_key ?session_token () =
   {access_key_id; secret_access_key; session_token}
 
+exception Unknown_region
+
 module Region = struct
   type t =
     [ `us_east_1
@@ -41,7 +43,7 @@ module Region = struct
     | "ap-southeast-2" -> `ap_southeast_2
     | "ap-northeast-1" -> `ap_northeast_1
     | "sa-east-1" -> `sa_east_1
-    | _ -> raise Not_found
+    | _ -> raise Unknown_region
 end
 
 type error =

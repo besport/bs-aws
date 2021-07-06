@@ -10,6 +10,8 @@ val credentials
   -> unit
   -> credentials
 
+exception Unknown_region
+
 module Region : sig
   type t =
     [ `us_east_1
