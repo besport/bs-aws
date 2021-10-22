@@ -50,8 +50,14 @@ module Make (Conf : Service.CONF) = struct
     in
     attribute_value_of_yojson % list_of_obj
 
+  type attribute_values = (string * attribute_value) list [@@deriving show]
+
   let yojson_of_attribute_values l =
     `Assoc (List.map (Tuple2.map2 yojson_of_attribute_value) l)
+
+  let attribute_values_of_yojson = function
+    | `Assoc l -> List.map (Tuple2.map2 attribute_value_of_yojson) l
+    | _ -> raise Not_found
 
   let perform ~action ~payload =
     let headers =
@@ -77,12 +83,6 @@ module Make (Conf : Service.CONF) = struct
 
     let yojson_of_expressionAttributeNames l =
       `Assoc (List.map (fun (name, value) -> name, `String value) l)
-
-    type attribute_values = (string * attribute_value) list [@@deriving show]
-
-    let attribute_values_of_yojson = function
-      | `Assoc l -> List.map (Tuple2.map2 attribute_value_of_yojson) l
-      | _ -> raise Not_found
 
     type request =
       { attributesToGet : string list option
@@ -213,4 +213,18 @@ module Make (Conf : Service.CONF) = struct
         ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException" } ->
         Lwt.fail ResourceInUseException
     | exn -> Lwt.fail exn
+
+  module DeleteItem = struct
+    type request =
+      { key : attribute_values [@key "Key"]
+      ; tableName : string [@key "TableName"] }
+    [@@deriving yojson, show]
+  end
+
+  let delete_item ~tableName items =
+    let payload =
+      Yojson.Safe.to_string @@ DeleteItem.yojson_of_request
+      @@ {DeleteItem.key = items; tableName}
+    in
+    perform ~action:"DeleteItem" ~payload
 end
