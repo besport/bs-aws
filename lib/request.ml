@@ -60,12 +60,26 @@ let simple_perform ~secure ~meth ~host ?port ~uri ?(query = []) ?(headers = [])
   match code with
   | `OK | `Created | `No_content -> Lwt.return (body, headers)
   | _ ->
+      let typ, message =
+        match body with
+        | "" -> "", ""
+        | body -> (
+            let get_string field json =
+              let open Yojson.Basic.Util in
+              match to_string_option @@ member field json with
+              | None -> ""
+              | Some s -> s
+            in
+            try
+              let json = Yojson.Basic.from_string body in
+              get_string "__type" json, get_string "message" json
+            with exn ->
+              prerr_endline @@ __LOC__ ^ ": failed to parse error response: ";
+              prerr_endline body;
+              raise exn)
+      in
       let error =
-        { Common.request_id = ""
-        ; (*XXX*)
-          code = Cohttp.Code.code_of_status code
-        ; typ = ""
-        ; message = body }
+        {Common.code = Cohttp.Code.code_of_status code; typ; message}
       in
       Lwt.fail (Common.Error error)
 

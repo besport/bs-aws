@@ -28,12 +28,7 @@ module Region : sig
   val from_string : string -> t
 end
 
-type error =
-  { request_id : string
-  ; code : int
-  ; (* HTTP error code *)
-    typ : string
-  ; message : string }
+type error = {code : int (* HTTP error code *); typ : string; message : string}
 
 exception Error of error
 

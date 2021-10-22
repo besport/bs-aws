@@ -46,19 +46,17 @@ module Region = struct
     | _ -> raise Unknown_region
 end
 
-type error =
-  { request_id : string
-  ; code : int
-  ; (* HTTP error code *)
-    typ : string
-  ; message : string }
+type error = {code : int (* HTTP error code *); typ : string; message : string}
 
 exception Error of error
 
 let () =
   Printexc.register_printer @@ function
-  | Error {code; message} ->
-      let msg = Printf.sprintf "Common.Error %d: %s" code message in
+  | Error {code; typ; message} ->
+      let msg =
+        Printf.sprintf "Common.Error {code = %d; type = %s; message = %s}" code
+          typ message
+      in
       Some msg
   | _ -> None
 
