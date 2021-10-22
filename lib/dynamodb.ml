@@ -115,7 +115,7 @@ module Make (Conf : Service.CONF) = struct
 
     let request ?attributes_to_get ?consistent_read
         ?(expression_attribute_names = []) ?projection_expression
-        ?return_consumed_capacity ~table_name key
+        ?return_consumed_capacity ~table key
       =
       { attributes_to_get
       ; consistent_read
@@ -124,26 +124,26 @@ module Make (Conf : Service.CONF) = struct
       ; key
       ; projection_expression
       ; return_consumed_capacity
-      ; table_name }
+      ; table_name = table }
       [@@deriving yojson, show]
   end
 
   let get_item ?attributes_to_get ?consistent_read ?projection_expression
-      ?return_consumed_capacity ~table_name key
+      ?return_consumed_capacity ~table key
     =
     let open GetItem in
     let payload =
       Yojson.Safe.to_string @@ yojson_of_request
       @@ request ?attributes_to_get ?consistent_read ?projection_expression
-           ?return_consumed_capacity ~table_name key
+           ?return_consumed_capacity ~table key
     in
     let%lwt response = perform ~action:"GetItem" ~payload in
     let {consumed_capacity; item} = response_of_yojson response in
     Lwt.return (consumed_capacity, Option.default [] item)
 
-  let put_item ~table_name items =
+  let put_item ~table items =
     let item = yojson_of_attribute_values items in
-    let body = ["TableName", `String table_name; "Item", item] in
+    let body = ["TableName", `String table; "Item", item] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     perform ~action:"PutItem" ~payload
 
@@ -188,8 +188,8 @@ module Make (Conf : Service.CONF) = struct
     [@@deriving yojson, show]
   end
 
-  let describe_table ~table_name =
-    let body = ["TableName", `String table_name] in
+  let describe_table ~table =
+    let body = ["TableName", `String table] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     let%lwt response = perform ~action:"DescribeTable" ~payload in
     Lwt.return @@ DescribeTable.result_of_yojson response
@@ -228,7 +228,7 @@ module Make (Conf : Service.CONF) = struct
     [@@deriving yojson, show]
   end
 
-  let create_table ~table_name ~attributes ~primary_key ?sort_key () =
+  let create_table ~table ~attributes ~primary_key ?sort_key () =
     let attribute_definitions =
       let attribute_definition (attribute_name, attribute_type) =
         {AttributeDefinition.attribute_name; attribute_type}
@@ -250,7 +250,7 @@ module Make (Conf : Service.CONF) = struct
       Yojson.Safe.to_string @@ CreateTable.yojson_of_request
       @@ { CreateTable.attribute_definitions
          ; key_schema
-         ; table_name
+         ; table_name = table
          ; billing_mode = "PAY_PER_REQUEST" }
     in
     perform ~action:"CreateTable" ~payload
@@ -262,10 +262,10 @@ module Make (Conf : Service.CONF) = struct
     [@@deriving yojson, show]
   end
 
-  let delete_item ~table_name items =
+  let delete_item ~table items =
     let payload =
       Yojson.Safe.to_string @@ DeleteItem.yojson_of_request
-      @@ {DeleteItem.key = items; table_name}
+      @@ {DeleteItem.key = items; table_name = table}
     in
     perform ~action:"DeleteItem" ~payload
 end
