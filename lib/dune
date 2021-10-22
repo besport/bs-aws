@@ -1,8 +1,9 @@
 (library
  (name bs_aws)
  (public_name bs-aws)
- (libraries lwt cohttp-lwt-unix xmlm ezxmlm yojson cryptokit logs ppx_yojson_conv)
- (preprocess (pps lwt_ppx ppx_yojson_conv))
+ (libraries lwt cohttp-lwt-unix xmlm ezxmlm yojson cryptokit logs ppx_yojson_conv batteries)
+ (preprocess (pps lwt_ppx ppx_yojson_conv ppx_deriving.show))
+
  (private_modules Signature)
  (modules Base Credentials Service Lambda Rds S3 Signature Sqs Ssm Common
           Elastic_transcoder Mediaconvert Request Ses Sns Elasticsearch Cloudwatch Dynamodb)
