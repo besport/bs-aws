@@ -24,7 +24,7 @@ module Make (Conf : Service.CONF) = struct
   end
 
   type attribute_value =
-    | B of string
+    | B of bytes
     | BOOL of bool
     | BS of string list
     | L of attribute_value list
