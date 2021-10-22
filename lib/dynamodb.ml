@@ -65,7 +65,12 @@ module Make (Conf : Service.CONF) = struct
       ; "content-type", "application/x-amz-json-1.0" ]
     in
     let%lwt response_body, _ =
-      Service.request ~meth:`POST ~uri:"/" ~headers ~payload ()
+      try%lwt Service.request ~meth:`POST ~uri:"/" ~headers ~payload () with
+      | Common.Error
+          { code = 400
+          ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException" } ->
+          Lwt.fail ResourceInUseException
+      | exn -> Lwt.fail exn
     in
     Lwt.return @@ Yojson.Safe.from_string response_body
 
@@ -143,10 +148,20 @@ module Make (Conf : Service.CONF) = struct
     let payload = Yojson.Safe.to_string (`Assoc body) in
     perform ~action:"PutItem" ~payload
 
+  module DescribeTable = struct
+    type tableDescription =
+      {itemCount : int option [@yojson.option] [@key "ItemCount"]}
+    [@@deriving yojson, show]
+
+    type result = {table : tableDescription [@key "Table"]}
+    [@@deriving yojson, show]
+  end
+
   let describe_table ~tableName =
     let body = ["TableName", `String tableName] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
-    perform ~action:"DescribeTable" ~payload
+    let%lwt response = perform ~action:"DescribeTable" ~payload in
+    Lwt.return @@ DescribeTable.result_of_yojson response
 
   module AttributeDefinition = struct
     type attributeType = [`S | `N | `B] [@@deriving yojson, show]
@@ -207,12 +222,7 @@ module Make (Conf : Service.CONF) = struct
          ; tableName
          ; billingMode = "PAY_PER_REQUEST" }
     in
-    try%lwt perform ~action:"CreateTable" ~payload with
-    | Common.Error
-        { code = 400
-        ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException" } ->
-        Lwt.fail ResourceInUseException
-    | exn -> Lwt.fail exn
+    perform ~action:"CreateTable" ~payload
 
   module DeleteItem = struct
     type request =
