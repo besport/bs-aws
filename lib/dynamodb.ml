@@ -23,6 +23,10 @@ module Make (Conf : Service.CONF) = struct
       , fun t -> match yojson_of_t t with `List [x] -> x | _ -> assert false )
   end
 
+  type yojson = Yojson.Safe.t [@@deriving show]
+
+  let yojson_of_yojson = identity
+
   type attribute_value =
     | B of bytes
     | BOOL of bool
@@ -103,13 +107,8 @@ module Make (Conf : Service.CONF) = struct
       ; tableName : string [@key "TableName"] }
     [@@deriving yojson, show]
 
-    type consumedCapacity = Yojson.Safe.t [@@deriving show]
-
-    let consumedCapacity_of_yojson, yojson_of_consumedCapacity =
-      identity, identity
-
     type response =
-      { consumedCapacity : consumedCapacity option
+      { consumedCapacity : yojson option
             [@yojson.option] [@key "consumedCapacity"]
       ; item : attribute_values option [@yojson.option] [@key "Item"] }
     [@@deriving yojson, show]
@@ -150,7 +149,37 @@ module Make (Conf : Service.CONF) = struct
 
   module DescribeTable = struct
     type tableDescription =
-      {itemCount : int option [@yojson.option] [@key "ItemCount"]}
+      { archivalSummary : yojson option [@yojson.option] [@key "ArchivalSummary"]
+      ; attributeDefinitions : yojson option
+            [@yojson.option] [@key "AttributeDefinitions"]
+      ; billingModeSummary : yojson option
+            [@yojson.option] [@key "BillingModeSummary"]
+      ; creationDateTime : yojson option
+            [@yojson.option] [@key "CreationDateTime"]
+      ; globalSecondaryIndexes : yojson option
+            [@yojson.option] [@key "GlobalSecondaryIndexes"]
+      ; globalTableVersion : yojson option
+            [@yojson.option] [@key "GlobalTableVersion"]
+      ; itemCount : int option [@yojson.option] [@key "ItemCount"]
+      ; keySchema : yojson option [@yojson.option] [@key "KeySchema"]
+      ; latestStreamArn : yojson option
+            [@yojson.option] [@key "LatestStreamArn"]
+      ; latestStreamLabel : yojson option
+            [@yojson.option] [@key "LatestStreamLabel"]
+      ; localSecondaryIndexes : yojson option
+            [@yojson.option] [@key "LocalSecondaryIndexes"]
+      ; provisionedThroughput : yojson option
+            [@yojson.option] [@key "ProvisionedThroughput"]
+      ; replicas : yojson option [@yojson.option] [@key "Replicas"]
+      ; restoreSummary : yojson option [@yojson.option] [@key "RestoreSummary"]
+      ; sSEDescription : yojson option [@yojson.option] [@key "SSEDescription"]
+      ; streamSpecification : yojson option
+            [@yojson.option] [@key "StreamSpecification"]
+      ; tableArn : yojson option [@yojson.option] [@key "TableArn"]
+      ; tableId : yojson option [@yojson.option] [@key "TableId"]
+      ; tableName : yojson option [@yojson.option] [@key "TableName"]
+      ; tableSizeBytes : yojson option [@yojson.option] [@key "TableSizeBytes"]
+      ; tableStatus : yojson option [@yojson.option] [@key "TableStatus"] }
     [@@deriving yojson, show]
 
     type result = {table : tableDescription [@key "Table"]}
@@ -161,7 +190,6 @@ module Make (Conf : Service.CONF) = struct
     let body = ["TableName", `String tableName] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     let%lwt response = perform ~action:"DescribeTable" ~payload in
-    print_endline @@ Yojson.Safe.to_string response;
     Lwt.return @@ DescribeTable.result_of_yojson response
 
   module AttributeDefinition = struct
