@@ -79,166 +79,168 @@ module Make (Conf : Service.CONF) = struct
     Lwt.return @@ Yojson.Safe.from_string response_body
 
   module GetItem = struct
-    type expressionAttributeNames = (string * string) list [@@deriving show]
+    type expression_attribute_names = (string * string) list [@@deriving show]
 
-    let expressionAttributeNames_of_yojson = function
+    let expression_attribute_names_of_yojson = function
       | `Assoc l ->
-          let expressionAttributeName_of_yojson = function
+          let expression_attribute_name_of_yojson = function
             | name, `String value -> name, value
             | _ -> raise Parse_error
           in
-          List.map expressionAttributeName_of_yojson l
+          List.map expression_attribute_name_of_yojson l
       | _ -> raise Parse_error
 
-    let yojson_of_expressionAttributeNames l =
+    let yojson_of_expression_attribute_names l =
       `Assoc (List.map (fun (name, value) -> name, `String value) l)
 
     type request =
-      { attributesToGet : string list option
+      { attributes_to_get : string list option
             [@yojson.option] [@key "AttributesToGet"]
-      ; consistentRead : bool option [@yojson.option] [@key "ConsistentRead"]
-      ; expressionAttributeNames : expressionAttributeNames option
+      ; consistent_read : bool option [@yojson.option] [@key "ConsistentRead"]
+      ; expression_attribute_names : expression_attribute_names option
             [@key "ExpressionAttributeNames"] [@yojson.option]
       ; key : attribute_values [@key "Key"]
-      ; projectionExpression : string option
+      ; projection_expression : string option
             [@yojson.option] [@key "ProjectionExpression"]
-      ; returnConsumedCapacity : string option
+      ; return_consumed_capacity : string option
             [@yojson.option] [@key "ReturnConsumedCapacity"]
-      ; tableName : string [@key "TableName"] }
+      ; table_name : string [@key "TableName"] }
     [@@deriving yojson, show]
 
     type response =
-      { consumedCapacity : yojson option
+      { consumed_capacity : yojson option
             [@yojson.option] [@key "consumedCapacity"]
       ; item : attribute_values option [@yojson.option] [@key "Item"] }
     [@@deriving yojson, show]
 
-    let request ?attributesToGet ?consistentRead
-        ?(expressionAttributeNames = []) ?projectionExpression
-        ?returnConsumedCapacity ~tableName key
+    let request ?attributes_to_get ?consistent_read
+        ?(expression_attribute_names = []) ?projection_expression
+        ?return_consumed_capacity ~table_name key
       =
-      { attributesToGet
-      ; consistentRead
-      ; expressionAttributeNames =
-          (match expressionAttributeNames with [] -> None | l -> Some l)
+      { attributes_to_get
+      ; consistent_read
+      ; expression_attribute_names =
+          (match expression_attribute_names with [] -> None | l -> Some l)
       ; key
-      ; projectionExpression
-      ; returnConsumedCapacity
-      ; tableName }
+      ; projection_expression
+      ; return_consumed_capacity
+      ; table_name }
       [@@deriving yojson, show]
   end
 
-  let get_item ?attributesToGet ?consistentRead ?projectionExpression
-      ?returnConsumedCapacity ~tableName key
+  let get_item ?attributes_to_get ?consistent_read ?projection_expression
+      ?return_consumed_capacity ~table_name key
     =
     let open GetItem in
     let payload =
       Yojson.Safe.to_string @@ yojson_of_request
-      @@ request ?attributesToGet ?consistentRead ?projectionExpression
-           ?returnConsumedCapacity ~tableName key
+      @@ request ?attributes_to_get ?consistent_read ?projection_expression
+           ?return_consumed_capacity ~table_name key
     in
     let%lwt response = perform ~action:"GetItem" ~payload in
-    let {consumedCapacity; item} = response_of_yojson response in
-    Lwt.return (consumedCapacity, Option.default [] item)
+    let {consumed_capacity; item} = response_of_yojson response in
+    Lwt.return (consumed_capacity, Option.default [] item)
 
-  let put_item ~tableName items =
+  let put_item ~table_name items =
     let item = yojson_of_attribute_values items in
-    let body = ["TableName", `String tableName; "Item", item] in
+    let body = ["TableName", `String table_name; "Item", item] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     perform ~action:"PutItem" ~payload
 
   module DescribeTable = struct
-    type tableDescription =
-      { archivalSummary : yojson option [@yojson.option] [@key "ArchivalSummary"]
-      ; attributeDefinitions : yojson option
+    type table_description =
+      { archival_summary : yojson option
+            [@yojson.option] [@key "ArchivalSummary"]
+      ; attribute_definitions : yojson option
             [@yojson.option] [@key "AttributeDefinitions"]
-      ; billingModeSummary : yojson option
+      ; billing_mode_summary : yojson option
             [@yojson.option] [@key "BillingModeSummary"]
-      ; creationDateTime : yojson option
+      ; creation_date_time : yojson option
             [@yojson.option] [@key "CreationDateTime"]
-      ; globalSecondaryIndexes : yojson option
+      ; global_secondary_indexes : yojson option
             [@yojson.option] [@key "GlobalSecondaryIndexes"]
-      ; globalTableVersion : yojson option
+      ; global_table_version : yojson option
             [@yojson.option] [@key "GlobalTableVersion"]
-      ; itemCount : int option [@yojson.option] [@key "ItemCount"]
-      ; keySchema : yojson option [@yojson.option] [@key "KeySchema"]
-      ; latestStreamArn : yojson option
+      ; item_count : int option [@yojson.option] [@key "ItemCount"]
+      ; key_schema : yojson option [@yojson.option] [@key "KeySchema"]
+      ; latest_stream_arn : yojson option
             [@yojson.option] [@key "LatestStreamArn"]
-      ; latestStreamLabel : yojson option
+      ; latest_stream_label : yojson option
             [@yojson.option] [@key "LatestStreamLabel"]
-      ; localSecondaryIndexes : yojson option
+      ; local_secondary_indexes : yojson option
             [@yojson.option] [@key "LocalSecondaryIndexes"]
-      ; provisionedThroughput : yojson option
+      ; provisioned_throughput : yojson option
             [@yojson.option] [@key "ProvisionedThroughput"]
       ; replicas : yojson option [@yojson.option] [@key "Replicas"]
-      ; restoreSummary : yojson option [@yojson.option] [@key "RestoreSummary"]
-      ; sSEDescription : yojson option [@yojson.option] [@key "SSEDescription"]
-      ; streamSpecification : yojson option
+      ; restore_summary : yojson option [@yojson.option] [@key "RestoreSummary"]
+      ; sse_description : yojson option [@yojson.option] [@key "SSEDescription"]
+      ; stream_specification : yojson option
             [@yojson.option] [@key "StreamSpecification"]
-      ; tableArn : yojson option [@yojson.option] [@key "TableArn"]
-      ; tableId : yojson option [@yojson.option] [@key "TableId"]
-      ; tableName : yojson option [@yojson.option] [@key "TableName"]
-      ; tableSizeBytes : yojson option [@yojson.option] [@key "TableSizeBytes"]
-      ; tableStatus : yojson option [@yojson.option] [@key "TableStatus"] }
+      ; table_arn : yojson option [@yojson.option] [@key "TableArn"]
+      ; table_id : yojson option [@yojson.option] [@key "TableId"]
+      ; table_name : yojson option [@yojson.option] [@key "TableName"]
+      ; table_size_bytes : yojson option
+            [@yojson.option] [@key "TableSizeBytes"]
+      ; table_status : yojson option [@yojson.option] [@key "TableStatus"] }
     [@@deriving yojson, show]
 
-    type result = {table : tableDescription [@key "Table"]}
+    type result = {table : table_description [@key "Table"]}
     [@@deriving yojson, show]
   end
 
-  let describe_table ~tableName =
-    let body = ["TableName", `String tableName] in
+  let describe_table ~table_name =
+    let body = ["TableName", `String table_name] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     let%lwt response = perform ~action:"DescribeTable" ~payload in
     Lwt.return @@ DescribeTable.result_of_yojson response
 
   module AttributeDefinition = struct
-    type attributeType = [`S | `N | `B] [@@deriving yojson, show]
+    type attribute_type = [`S | `N | `B] [@@deriving yojson, show]
 
-    let attributeType_of_yojson, yojson_of_attributeType =
-      Aux.single attributeType_of_yojson yojson_of_attributeType
+    let attribute_type_of_yojson, yojson_of_attribute_type =
+      Aux.single attribute_type_of_yojson yojson_of_attribute_type
 
     type t =
-      { attributeName : string [@key "AttributeName"]
-      ; attributeType : attributeType [@key "AttributeType"] }
+      { attribute_name : string [@key "AttributeName"]
+      ; attribute_type : attribute_type [@key "AttributeType"] }
     [@@deriving yojson, show]
   end
 
   module KeySchemaElement = struct
-    type keyType = [`HASH | `RANGE] [@@deriving yojson, show]
+    type key_type = [`HASH | `RANGE] [@@deriving yojson, show]
 
-    let keyType_of_yojson, yojson_of_keyType =
-      Aux.single keyType_of_yojson yojson_of_keyType
+    let key_type_of_yojson, yojson_of_key_type =
+      Aux.single key_type_of_yojson yojson_of_key_type
 
     type t =
-      { attributeName : string [@key "AttributeName"]
-      ; keyType : keyType [@key "KeyType"] }
+      { attribute_name : string [@key "AttributeName"]
+      ; key_type : key_type [@key "KeyType"] }
     [@@deriving yojson, show]
   end
 
   module CreateTable = struct
     type request =
-      { attributeDefinitions : AttributeDefinition.t list
+      { attribute_definitions : AttributeDefinition.t list
             [@key "AttributeDefinitions"]
-      ; keySchema : KeySchemaElement.t list [@key "KeySchema"]
-      ; tableName : string [@key "TableName"]
-      ; billingMode : string [@key "BillingMode"] }
+      ; key_schema : KeySchemaElement.t list [@key "KeySchema"]
+      ; table_name : string [@key "TableName"]
+      ; billing_mode : string [@key "BillingMode"] }
     [@@deriving yojson, show]
   end
 
-  let create_table ~tableName ~attributes ~primary_key ?sort_key () =
-    let attributeDefinitions =
-      let attribute_definition (attributeName, attributeType) =
-        {AttributeDefinition.attributeName; attributeType}
+  let create_table ~table_name ~attributes ~primary_key ?sort_key () =
+    let attribute_definitions =
+      let attribute_definition (attribute_name, attribute_type) =
+        {AttributeDefinition.attribute_name; attribute_type}
       in
       List.map attribute_definition attributes
-    and keySchema =
+    and key_schema =
       let primary_schema_element =
-        {KeySchemaElement.attributeName = primary_key; keyType = `HASH}
+        {KeySchemaElement.attribute_name = primary_key; key_type = `HASH}
       and sort_key_element =
         sort_key
         |> Option.map @@ fun sk ->
-           {KeySchemaElement.attributeName = sk; keyType = `RANGE}
+           {KeySchemaElement.attribute_name = sk; key_type = `RANGE}
       in
       match sort_key_element with
       | None -> [primary_schema_element]
@@ -246,24 +248,24 @@ module Make (Conf : Service.CONF) = struct
     in
     let payload =
       Yojson.Safe.to_string @@ CreateTable.yojson_of_request
-      @@ { CreateTable.attributeDefinitions
-         ; keySchema
-         ; tableName
-         ; billingMode = "PAY_PER_REQUEST" }
+      @@ { CreateTable.attribute_definitions
+         ; key_schema
+         ; table_name
+         ; billing_mode = "PAY_PER_REQUEST" }
     in
     perform ~action:"CreateTable" ~payload
 
   module DeleteItem = struct
     type request =
       { key : attribute_values [@key "Key"]
-      ; tableName : string [@key "TableName"] }
+      ; table_name : string [@key "TableName"] }
     [@@deriving yojson, show]
   end
 
-  let delete_item ~tableName items =
+  let delete_item ~table_name items =
     let payload =
       Yojson.Safe.to_string @@ DeleteItem.yojson_of_request
-      @@ {DeleteItem.key = items; tableName}
+      @@ {DeleteItem.key = items; table_name}
     in
     perform ~action:"DeleteItem" ~payload
 end
