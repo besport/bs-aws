@@ -192,6 +192,7 @@ module Make (Conf : Service.CONF) = struct
     let body = ["TableName", `String table] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     let%lwt response = perform ~action:"DescribeTable" ~payload in
+    print_endline @@ Yojson.Safe.to_string response;
     Lwt.return @@ DescribeTable.result_of_yojson response
 
   module AttributeDefinition = struct
