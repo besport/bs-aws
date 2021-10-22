@@ -181,7 +181,9 @@ module Make (Conf : Service.CONF) = struct
       ; table_name : yojson option [@yojson.option] [@key "TableName"]
       ; table_size_bytes : yojson option
             [@yojson.option] [@key "TableSizeBytes"]
-      ; table_status : yojson option [@yojson.option] [@key "TableStatus"] }
+      ; table_status : yojson option [@yojson.option] [@key "TableStatus"]
+      ; table_throughput_mode_summary : yojson option
+            [@yojson.option] [@key "TableThroughputModeSummary"] }
     [@@deriving yojson, show]
 
     type result = {table : table_description [@key "Table"]}
