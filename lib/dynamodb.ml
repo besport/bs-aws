@@ -222,7 +222,7 @@ module Make (Conf : Service.CONF) = struct
     [@@deriving yojson, show]
   end
 
-  let create_table ~table ~attributes ~primary_key ?sort_key () =
+  let create_table ~attributes ~primary_key ?sort_key table =
     let attribute_definitions =
       let attribute_definition (attribute_name, attribute_type) =
         {AttributeDefinition.attribute_name; attribute_type}
