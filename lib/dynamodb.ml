@@ -145,8 +145,8 @@ module Make (Conf : Service.CONF) = struct
     let payload = Yojson.Safe.to_string (`Assoc body) in
     perform ~action:"PutItem" ~payload
 
-  module DescribeTable = struct
-    type table_description =
+  module TableDescription = struct
+    type t =
       { archival_summary : yojson option [@option] [@key "ArchivalSummary"]
       ; attribute_definitions : yojson option
             [@option] [@key "AttributeDefinitions"]
@@ -175,10 +175,12 @@ module Make (Conf : Service.CONF) = struct
       ; table_name : yojson option [@option] [@key "TableName"]
       ; table_size_bytes : yojson option [@option] [@key "TableSizeBytes"]
       ; table_status : yojson option [@option] [@key "TableStatus"] }
-    [@@deriving yojson, show] [@@allow_extra_fields]
-
-    type result = {table : table_description [@key "Table"]}
     [@@deriving of_yojson, show] [@@allow_extra_fields]
+  end
+
+  module DescribeTable = struct
+    type result = {table : TableDescription.t [@key "Table"]}
+    [@@deriving of_yojson, show]
   end
 
   let describe_table table =
@@ -247,7 +249,8 @@ module Make (Conf : Service.CONF) = struct
          ; table_name = table
          ; billing_mode = "PAY_PER_REQUEST" }
     in
-    perform ~action:"CreateTable" ~payload
+    let%lwt response = perform ~action:"CreateTable" ~payload in
+    Lwt.return @@ TableDescription.t_of_yojson response
 
   module DeleteItem = struct
     type request =
