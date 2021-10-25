@@ -94,23 +94,21 @@ module Make (Conf : Service.CONF) = struct
       `Assoc (List.map (fun (name, value) -> name, `String value) l)
 
     type request =
-      { attributes_to_get : string list option
-            [@yojson.option] [@key "AttributesToGet"]
-      ; consistent_read : bool option [@yojson.option] [@key "ConsistentRead"]
+      { attributes_to_get : string list option [@option] [@key "AttributesToGet"]
+      ; consistent_read : bool option [@option] [@key "ConsistentRead"]
       ; expression_attribute_names : expression_attribute_names option
-            [@key "ExpressionAttributeNames"] [@yojson.option]
+            [@key "ExpressionAttributeNames"] [@option]
       ; key : attribute_values [@key "Key"]
       ; projection_expression : string option
-            [@yojson.option] [@key "ProjectionExpression"]
+            [@option] [@key "ProjectionExpression"]
       ; return_consumed_capacity : string option
-            [@yojson.option] [@key "ReturnConsumedCapacity"]
+            [@option] [@key "ReturnConsumedCapacity"]
       ; table_name : string [@key "TableName"] }
     [@@deriving yojson, show]
 
     type response =
-      { consumed_capacity : yojson option
-            [@yojson.option] [@key "consumedCapacity"]
-      ; item : attribute_values option [@yojson.option] [@key "Item"] }
+      { consumed_capacity : yojson option [@option] [@key "consumedCapacity"]
+      ; item : attribute_values option [@option] [@key "Item"] }
     [@@deriving yojson, show] [@@allow_extra_fields]
 
     let request ?attributes_to_get ?consistent_read
@@ -149,39 +147,34 @@ module Make (Conf : Service.CONF) = struct
 
   module DescribeTable = struct
     type table_description =
-      { archival_summary : yojson option
-            [@yojson.option] [@key "ArchivalSummary"]
+      { archival_summary : yojson option [@option] [@key "ArchivalSummary"]
       ; attribute_definitions : yojson option
-            [@yojson.option] [@key "AttributeDefinitions"]
+            [@option] [@key "AttributeDefinitions"]
       ; billing_mode_summary : yojson option
-            [@yojson.option] [@key "BillingModeSummary"]
-      ; creation_date_time : yojson option
-            [@yojson.option] [@key "CreationDateTime"]
+            [@option] [@key "BillingModeSummary"]
+      ; creation_date_time : yojson option [@option] [@key "CreationDateTime"]
       ; global_secondary_indexes : yojson option
-            [@yojson.option] [@key "GlobalSecondaryIndexes"]
+            [@option] [@key "GlobalSecondaryIndexes"]
       ; global_table_version : yojson option
-            [@yojson.option] [@key "GlobalTableVersion"]
-      ; item_count : int option [@yojson.option] [@key "ItemCount"]
-      ; key_schema : yojson option [@yojson.option] [@key "KeySchema"]
-      ; latest_stream_arn : yojson option
-            [@yojson.option] [@key "LatestStreamArn"]
-      ; latest_stream_label : yojson option
-            [@yojson.option] [@key "LatestStreamLabel"]
+            [@option] [@key "GlobalTableVersion"]
+      ; item_count : int option [@option] [@key "ItemCount"]
+      ; key_schema : yojson option [@option] [@key "KeySchema"]
+      ; latest_stream_arn : yojson option [@option] [@key "LatestStreamArn"]
+      ; latest_stream_label : yojson option [@option] [@key "LatestStreamLabel"]
       ; local_secondary_indexes : yojson option
-            [@yojson.option] [@key "LocalSecondaryIndexes"]
+            [@option] [@key "LocalSecondaryIndexes"]
       ; provisioned_throughput : yojson option
-            [@yojson.option] [@key "ProvisionedThroughput"]
-      ; replicas : yojson option [@yojson.option] [@key "Replicas"]
-      ; restore_summary : yojson option [@yojson.option] [@key "RestoreSummary"]
-      ; sse_description : yojson option [@yojson.option] [@key "SSEDescription"]
+            [@option] [@key "ProvisionedThroughput"]
+      ; replicas : yojson option [@option] [@key "Replicas"]
+      ; restore_summary : yojson option [@option] [@key "RestoreSummary"]
+      ; sse_description : yojson option [@option] [@key "SSEDescription"]
       ; stream_specification : yojson option
-            [@yojson.option] [@key "StreamSpecification"]
-      ; table_arn : yojson option [@yojson.option] [@key "TableArn"]
-      ; table_id : yojson option [@yojson.option] [@key "TableId"]
-      ; table_name : yojson option [@yojson.option] [@key "TableName"]
-      ; table_size_bytes : yojson option
-            [@yojson.option] [@key "TableSizeBytes"]
-      ; table_status : yojson option [@yojson.option] [@key "TableStatus"] }
+            [@option] [@key "StreamSpecification"]
+      ; table_arn : yojson option [@option] [@key "TableArn"]
+      ; table_id : yojson option [@option] [@key "TableId"]
+      ; table_name : yojson option [@option] [@key "TableName"]
+      ; table_size_bytes : yojson option [@option] [@key "TableSizeBytes"]
+      ; table_status : yojson option [@option] [@key "TableStatus"] }
     [@@deriving yojson, show] [@@allow_extra_fields]
 
     type result = {table : table_description [@key "Table"]}
