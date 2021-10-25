@@ -111,7 +111,7 @@ module Make (Conf : Service.CONF) = struct
       { consumed_capacity : yojson option
             [@yojson.option] [@key "consumedCapacity"]
       ; item : attribute_values option [@yojson.option] [@key "Item"] }
-    [@@deriving yojson, show]
+    [@@deriving yojson, show] [@@allow_extra_fields]
 
     let request ?attributes_to_get ?consistent_read
         ?(expression_attribute_names = []) ?projection_expression
@@ -181,13 +181,11 @@ module Make (Conf : Service.CONF) = struct
       ; table_name : yojson option [@yojson.option] [@key "TableName"]
       ; table_size_bytes : yojson option
             [@yojson.option] [@key "TableSizeBytes"]
-      ; table_status : yojson option [@yojson.option] [@key "TableStatus"]
-      ; table_throughput_mode_summary : yojson option
-            [@yojson.option] [@key "TableThroughputModeSummary"] }
-    [@@deriving yojson, show]
+      ; table_status : yojson option [@yojson.option] [@key "TableStatus"] }
+    [@@deriving yojson, show] [@@allow_extra_fields]
 
     type result = {table : table_description [@key "Table"]}
-    [@@deriving yojson, show]
+    [@@deriving yojson, show] [@@allow_extra_fields]
   end
 
   let describe_table ~table =
