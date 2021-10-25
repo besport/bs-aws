@@ -178,10 +178,10 @@ module Make (Conf : Service.CONF) = struct
     [@@deriving yojson, show] [@@allow_extra_fields]
 
     type result = {table : table_description [@key "Table"]}
-    [@@deriving yojson, show] [@@allow_extra_fields]
+    [@@deriving of_yojson, show] [@@allow_extra_fields]
   end
 
-  let describe_table ~table =
+  let describe_table table =
     let body = ["TableName", `String table] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     let%lwt response = perform ~action:"DescribeTable" ~payload in
