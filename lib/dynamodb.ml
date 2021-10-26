@@ -206,14 +206,19 @@ module Make (Conf : Service.CONF) = struct
       { item : attribute_values [@key "Item"]
       ; table_name : string [@key "TableName"]
       ; condition_expression : ConditionExpression.t option
-            [@option] [@key "ConditionExpression"] }
+            [@option] [@key "ConditionExpression"]
+      ; return_values : [`NONE | `ALL_OLD] option
+            [@option] [@key "ReturnValues"] }
     [@@deriving yojson_of, show]
   end
 
-  let put_item ~table ?condition_expression items =
+  let put_item ~table ?condition_expression ?return_values items =
     let payload =
       Yojson.Safe.to_string @@ PutItem.yojson_of_request
-      @@ {PutItem.item = items; table_name = table; condition_expression}
+      @@ { PutItem.item = items
+         ; table_name = table
+         ; condition_expression
+         ; return_values }
     in
     perform ~action:"PutItem" ~payload
 
