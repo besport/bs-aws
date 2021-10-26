@@ -210,10 +210,11 @@ module Make (Conf : Service.CONF) = struct
     [@@deriving yojson_of, show]
   end
 
-  let put_item ~table items =
-    let item = yojson_of_attribute_values items in
-    let body = ["TableName", `String table; "Item", item] in
-    let payload = Yojson.Safe.to_string (`Assoc body) in
+  let put_item ~table ?condition_expression items =
+    let payload =
+      Yojson.Safe.to_string @@ PutItem.yojson_of_request
+      @@ {PutItem.item = items; table_name = table; condition_expression}
+    in
     perform ~action:"PutItem" ~payload
 
   module TableDescription = struct
