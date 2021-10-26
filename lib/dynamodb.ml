@@ -104,7 +104,7 @@ module Make (Conf : Service.CONF) = struct
       ; return_consumed_capacity : string option
             [@option] [@key "ReturnConsumedCapacity"]
       ; table_name : string [@key "TableName"] }
-    [@@deriving yojson, show]
+    [@@deriving yojson_of, show]
 
     type response =
       { consumed_capacity : yojson option [@option] [@key "consumedCapacity"]
@@ -138,6 +138,60 @@ module Make (Conf : Service.CONF) = struct
     let%lwt response = perform ~action:"GetItem" ~payload in
     let {consumed_capacity; item} = response_of_yojson response in
     Lwt.return (consumed_capacity, Option.default [] item)
+
+  module ConditionExpression = struct
+    open Format
+
+    type operand = string [@@deriving show]
+    type comparator = Eq | NEq | LT | LEq | GT | GEq
+
+    let pp_comparator f = function
+      | Eq -> fprintf f "="
+      | NEq -> fprintf f "<>"
+      | LT -> fprintf f "<"
+      | LEq -> fprintf f "<="
+      | GT -> fprintf f ">"
+      | GEq -> fprintf f ">="
+
+    type funct =
+      | Attribute_exists of string
+      | Attribute_not_exists of string
+      | Attribute_type of string * string
+      | Begins_with of string * string
+      | Contains of string * string
+      | Size of string
+
+    let pp_funct f = function
+      | Attribute_exists path -> fprintf f "attribute_exists (%s)" path
+      | Attribute_not_exists path -> fprintf f "attribute_not_exists (%s)" path
+      | Attribute_type (path, t) -> fprintf f "attribute_type (%s, %s)" path t
+      | Begins_with (path, substr) ->
+          fprintf f "begins_with (%s, %s)" path substr
+      | Contains (path, operand) ->
+          fprintf f "contains (%s, %s)" path (show_operand operand)
+      | Size path -> fprintf f "size (%s)" path
+
+    type t =
+      | Comparison of operand * comparator * operand
+      | Between_and of operand * operand * operand
+      | In of operand list
+      | Function of funct
+      | And of t * t
+      | Or of t * t
+      | Not of t
+    [@@deriving show]
+
+    let yojson_of_t t = `String (show t)
+  end
+
+  module PutItem = struct
+    type request =
+      { item : attribute_values [@key "Item"]
+      ; table_name : string [@key "TableName"]
+      ; condition_expression : ConditionExpression.t option
+            [@option] [@key "ConditionExpression"] }
+    [@@deriving yojson_of, show]
+  end
 
   let put_item ~table items =
     let item = yojson_of_attribute_values items in
@@ -221,7 +275,7 @@ module Make (Conf : Service.CONF) = struct
       ; key_schema : KeySchemaElement.t list [@key "KeySchema"]
       ; table_name : string [@key "TableName"]
       ; billing_mode : string [@key "BillingMode"] }
-    [@@deriving yojson, show]
+    [@@deriving yojson_of, show]
   end
 
   let create_table ~attributes ~primary_key ?sort_key table =
@@ -256,7 +310,7 @@ module Make (Conf : Service.CONF) = struct
     type request =
       { key : attribute_values [@key "Key"]
       ; table_name : string [@key "TableName"] }
-    [@@deriving yojson, show]
+    [@@deriving yojson_of, show]
   end
 
   let delete_item ~table items =
