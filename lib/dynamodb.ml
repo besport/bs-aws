@@ -174,14 +174,31 @@ module Make (Conf : Service.CONF) = struct
     type t =
       | Comparison of operand * comparator * operand
       | Between_and of operand * operand * operand
-      | In of operand list
+      | In of operand * operand list
       | Function of funct
       | And of t * t
       | Or of t * t
       | Not of t
-    [@@deriving show]
+      | Paren of t
 
-    let yojson_of_t t = `String (show t)
+    let rec pp f = function
+      | Comparison (o1, c, o2) ->
+          fprintf f "%a %a %a" pp_operand o1 pp_comparator c pp_operand o2
+      | Between_and (o1, o2, o3) ->
+          fprintf f "%a BETWEEN %a AND %a" pp_operand o1 pp_operand o2
+            pp_operand o3
+      | In (o, operands) ->
+          fprintf f "%a IN %a" pp_operand o
+            (pp_print_list ~pp_sep:todo pp_operand)
+            operands
+      | Function funct -> pp_funct f funct
+      | And (c1, c2) -> fprintf f "%a AND %a" pp c1 pp c2
+      | Or (c1, c2) -> fprintf f "%a OR %a" pp c1 pp c2
+      | Not c -> fprintf f "NOT %a" pp c
+      | Paren c -> fprintf f "(%a)" pp c
+
+    let yojson_of_t t =
+      `String Format.(pp str_formatter t; flush_str_formatter ())
   end
 
   module PutItem = struct
