@@ -21,6 +21,13 @@ module Make (Conf : Service.CONF) = struct
     let single t_of_yojson yojson_of_t =
       ( (fun json -> t_of_yojson @@ `List [json])
       , fun t -> match yojson_of_t t with `List [x] -> x | _ -> assert false )
+
+    let parse_response ~__LOC__:loc p response =
+      try Lwt.return @@ p response
+      with Ppx_yojson_conv_lib.Yojson_conv.Of_yojson_error _ as exn ->
+        prerr_endline @@ loc ^ ": failed to parse response: ";
+        prerr_endline @@ Yojson.Safe.to_string response;
+        Lwt.fail exn
   end
 
   type yojson = Yojson.Safe.t [@@deriving show]
@@ -136,8 +143,7 @@ module Make (Conf : Service.CONF) = struct
            ?return_consumed_capacity ~table key
     in
     let%lwt response = perform ~action:"GetItem" ~payload in
-    print_endline @@ Yojson.Safe.to_string response;
-    Lwt.return @@ response_of_yojson response
+    Aux.parse_response ~__LOC__ response_of_yojson response
 
   module ConditionExpression = struct
     open Format
@@ -220,16 +226,13 @@ module Make (Conf : Service.CONF) = struct
   end
 
   let put_item ~table ?condition_expression ?return_values items =
+    let open PutItem in
     let payload =
-      Yojson.Safe.to_string @@ PutItem.yojson_of_request
-      @@ { PutItem.item = items
-         ; table_name = table
-         ; condition_expression
-         ; return_values }
+      Yojson.Safe.to_string @@ yojson_of_request
+      @@ {item = items; table_name = table; condition_expression; return_values}
     in
     let%lwt response = perform ~action:"PutItem" ~payload in
-    print_endline @@ Yojson.Safe.to_string response;
-    Lwt.return @@ PutItem.response_of_yojson response
+    Aux.parse_response ~__LOC__ response_of_yojson response
 
   module TableDescription = struct
     type t =
@@ -270,11 +273,11 @@ module Make (Conf : Service.CONF) = struct
   end
 
   let describe_table table =
+    let open DescribeTable in
     let body = ["TableName", `String table] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     let%lwt response = perform ~action:"DescribeTable" ~payload in
-    print_endline @@ Yojson.Safe.to_string response;
-    Lwt.return @@ DescribeTable.response_of_yojson response
+    Aux.parse_response ~__LOC__ response_of_yojson response
 
   module AttributeDefinition = struct
     type attribute_type = [`S | `N | `B] [@@deriving yojson, show]
@@ -311,6 +314,7 @@ module Make (Conf : Service.CONF) = struct
   end
 
   let create_table ~attributes ~primary_key ?sort_key table =
+    let open CreateTable in
     let attribute_definitions =
       let attribute_definition (attribute_name, attribute_type) =
         {AttributeDefinition.attribute_name; attribute_type}
@@ -329,15 +333,15 @@ module Make (Conf : Service.CONF) = struct
       | Some ske -> [primary_schema_element; ske]
     in
     let payload =
-      Yojson.Safe.to_string @@ CreateTable.yojson_of_request
-      @@ { CreateTable.attribute_definitions
+      Yojson.Safe.to_string @@ yojson_of_request
+      @@ { attribute_definitions
          ; key_schema
          ; table_name = table
          ; billing_mode = "PAY_PER_REQUEST" }
     in
     let%lwt response = perform ~action:"CreateTable" ~payload in
     print_endline @@ Yojson.Safe.to_string response;
-    Lwt.return @@ TableDescription.t_of_yojson response
+    Aux.parse_response ~__LOC__ TableDescription.t_of_yojson response
 
   module DeleteItem = struct
     type request =
