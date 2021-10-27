@@ -225,7 +225,7 @@ module Make (Conf : Service.CONF) = struct
     [@@deriving yojson_of, show]
 
     type response =
-      { attributes : attribute_values [@key "Attributes"]
+      { attributes : attribute_values option [@option] [@key "Attributes"]
       ; consumed_capacity : yojson option [@option] [@key "consumedCapacity"]
       ; item_collection_metrics : yojson option
             [@option] [@key "ItemCollectionMetrics"] }
