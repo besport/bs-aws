@@ -81,9 +81,16 @@ module Make (Conf : Service.CONF) = struct
           { code = 400
           ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException" } ->
           Lwt.fail ResourceInUseException
-      | exn -> Lwt.fail exn
+      | exn ->
+          prerr_string @@ __LOC__ ^ ": error during request:";
+          prerr_string @@ Printexc.to_string exn;
+          Lwt.fail exn
     in
-    Lwt.return @@ Yojson.Safe.from_string response_body
+    try Lwt.return @@ Yojson.Safe.from_string response_body
+    with exn ->
+      prerr_string @@ __LOC__ ^ ": error while parsing JSON:";
+      prerr_string response_body;
+      Lwt.fail exn
 
   module GetItem = struct
     type expression_attribute_names = (string * string) list [@@deriving show]
