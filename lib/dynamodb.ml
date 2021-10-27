@@ -90,7 +90,7 @@ module Make (Conf : Service.CONF) = struct
           Lwt.fail ConditionalCheckFailedException
       | exn ->
           prerr_endline @@ __LOC__ ^ ": error during request:";
-          prerr_endline @@ Printexc.to_string exn;
+          prerr_endline payload;
           Lwt.fail exn
     in
     try Lwt.return @@ Yojson.Safe.from_string response_body
