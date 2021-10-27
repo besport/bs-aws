@@ -136,6 +136,7 @@ module Make (Conf : Service.CONF) = struct
            ?return_consumed_capacity ~table key
     in
     let%lwt response = perform ~action:"GetItem" ~payload in
+    print_endline @@ Yojson.Safe.to_string response;
     Lwt.return @@ response_of_yojson response
 
   module ConditionExpression = struct
@@ -272,6 +273,7 @@ module Make (Conf : Service.CONF) = struct
     let body = ["TableName", `String table] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     let%lwt response = perform ~action:"DescribeTable" ~payload in
+    print_endline @@ Yojson.Safe.to_string response;
     Lwt.return @@ DescribeTable.response_of_yojson response
 
   module AttributeDefinition = struct
@@ -334,6 +336,7 @@ module Make (Conf : Service.CONF) = struct
          ; billing_mode = "PAY_PER_REQUEST" }
     in
     let%lwt response = perform ~action:"CreateTable" ~payload in
+    print_endline @@ Yojson.Safe.to_string response;
     Lwt.return @@ TableDescription.t_of_yojson response
 
   module DeleteItem = struct
