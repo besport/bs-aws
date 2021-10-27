@@ -210,6 +210,13 @@ module Make (Conf : Service.CONF) = struct
       ; return_values : [`NONE | `ALL_OLD] option
             [@option] [@key "ReturnValues"] }
     [@@deriving yojson_of, show]
+
+    type response =
+      { attributes : attribute_values [@key "Attributes"]
+      ; consumed_capacity : yojson option [@option] [@key "consumedCapacity"]
+      ; item_collection_metrics : yojson option
+            [@option] [@key "ItemCollectionMetrics"] }
+    [@@deriving of_yojson, show]
   end
 
   let put_item ~table ?condition_expression ?return_values items =
@@ -220,7 +227,9 @@ module Make (Conf : Service.CONF) = struct
          ; condition_expression
          ; return_values }
     in
-    perform ~action:"PutItem" ~payload
+    let%lwt response = perform ~action:"PutItem" ~payload in
+    print_endline @@ Yojson.Safe.to_string response;
+    Lwt.return @@ PutItem.response_of_yojson response
 
   module TableDescription = struct
     type t =
@@ -256,7 +265,7 @@ module Make (Conf : Service.CONF) = struct
   end
 
   module DescribeTable = struct
-    type result = {table : TableDescription.t [@key "Table"]}
+    type response = {table : TableDescription.t [@key "Table"]}
     [@@deriving of_yojson, show]
   end
 
@@ -264,8 +273,7 @@ module Make (Conf : Service.CONF) = struct
     let body = ["TableName", `String table] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
     let%lwt response = perform ~action:"DescribeTable" ~payload in
-    print_endline @@ Yojson.Safe.to_string response;
-    Lwt.return @@ DescribeTable.result_of_yojson response
+    Lwt.return @@ DescribeTable.response_of_yojson response
 
   module AttributeDefinition = struct
     type attribute_type = [`S | `N | `B] [@@deriving yojson, show]
