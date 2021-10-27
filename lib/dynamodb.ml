@@ -120,10 +120,16 @@ module Make (Conf : Service.CONF) = struct
       ; table_name : string [@key "TableName"] }
     [@@deriving yojson_of, show]
 
-    type response =
-      { consumed_capacity : yojson option [@option] [@key "consumedCapacity"]
-      ; item : attribute_values option [@option] [@key "Item"] }
+    type response' =
+      { consumed_capacity' : yojson option [@option] [@key "consumedCapacity"]
+      ; item' : attribute_values option [@option] [@key "Item"] }
     [@@deriving of_yojson, show] [@@allow_extra_fields]
+
+    type response = {consumed_capacity : yojson option; item : attribute_values}
+    [@@deriving show]
+
+    let transform_response {consumed_capacity' = c; item' = i} =
+      {consumed_capacity = c; item = Option.default [] i}
 
     let request ?attributes_to_get ?consistent_read
         ?(expression_attribute_names = []) ?projection_expression
@@ -150,7 +156,8 @@ module Make (Conf : Service.CONF) = struct
            ?return_consumed_capacity ~table key
     in
     let%lwt response = perform ~action:"GetItem" ~payload in
-    Aux.parse_response ~__LOC__ response_of_yojson response
+    Lwt.map transform_response
+    @@ Aux.parse_response ~__LOC__ response'_of_yojson response
 
   module ConditionExpression = struct
     open Format
