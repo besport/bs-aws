@@ -107,8 +107,8 @@ module Make (Conf : Service.CONF) = struct
     [@@deriving yojson_of, show]
 
     type response =
-      { consumed_capacity : yojson option [@option] [@key "consumedCapacity"]
-      ; item : attribute_values option [@option] [@key "Item"] }
+      { consumed_capacity : yojson [@key "consumedCapacity"]
+      ; item : attribute_values [@key "Item"] }
     [@@deriving yojson, show] [@@allow_extra_fields]
 
     let request ?attributes_to_get ?consistent_read
@@ -136,8 +136,7 @@ module Make (Conf : Service.CONF) = struct
            ?return_consumed_capacity ~table key
     in
     let%lwt response = perform ~action:"GetItem" ~payload in
-    let {consumed_capacity; item} = response_of_yojson response in
-    Lwt.return (consumed_capacity, Option.default [] item)
+    Lwt.return @@ response_of_yojson response
 
   module ConditionExpression = struct
     open Format
