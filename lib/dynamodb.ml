@@ -122,8 +122,8 @@ module Make (Conf : Service.CONF) = struct
 
     type response =
       { consumed_capacity : yojson option [@option] [@key "consumedCapacity"]
-      ; item : attribute_values [@key "Item"] }
-    [@@deriving yojson, show] [@@allow_extra_fields]
+      ; item : attribute_values option [@option] [@key "Item"] }
+    [@@deriving of_yojson, show] [@@allow_extra_fields]
 
     let request ?attributes_to_get ?consistent_read
         ?(expression_attribute_names = []) ?projection_expression
