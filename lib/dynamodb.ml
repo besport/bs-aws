@@ -82,14 +82,14 @@ module Make (Conf : Service.CONF) = struct
           ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException" } ->
           Lwt.fail ResourceInUseException
       | exn ->
-          prerr_string @@ __LOC__ ^ ": error during request:";
-          prerr_string @@ Printexc.to_string exn;
+          prerr_endline @@ __LOC__ ^ ": error during request:";
+          prerr_endline @@ Printexc.to_string exn;
           Lwt.fail exn
     in
     try Lwt.return @@ Yojson.Safe.from_string response_body
     with exn ->
-      prerr_string @@ __LOC__ ^ ": error while parsing JSON:";
-      prerr_string response_body;
+      prerr_endline @@ __LOC__ ^ ": error while parsing JSON:";
+      prerr_endline response_body;
       Lwt.fail exn
 
   module GetItem = struct
