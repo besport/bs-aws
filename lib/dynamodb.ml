@@ -5,6 +5,7 @@ let todo = Obj.magic @@ fun () -> failwith "TODO"
 module Make (Conf : Service.CONF) = struct
   exception Parse_error
   exception ResourceInUseException
+  exception ConditionalCheckFailedException
 
   let hostname region =
     Format.sprintf "dynamodb.%s.amazonaws.com" (Common.Region.to_string region)
@@ -81,6 +82,12 @@ module Make (Conf : Service.CONF) = struct
           { code = 400
           ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException" } ->
           Lwt.fail ResourceInUseException
+      | Common.Error
+          { code = 400
+          ; typ =
+              "com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException"
+          } ->
+          Lwt.fail ConditionalCheckFailedException
       | exn ->
           prerr_endline @@ __LOC__ ^ ": error during request:";
           prerr_endline @@ Printexc.to_string exn;
