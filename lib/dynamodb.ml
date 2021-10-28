@@ -7,8 +7,9 @@ module Make (Conf : Service.CONF) = struct
   exception Parse_error
   exception Encoding_error of string
   exception Decoding_error of string
-  exception ResourceInUseException
-  exception ConditionalCheckFailedException
+  exception ResourceInUseException of string
+  exception ConditionalCheckFailedException of string
+  exception ValidationException of string
 
   let hostname region =
     Format.sprintf "dynamodb.%s.amazonaws.com" (Common.Region.to_string region)
@@ -97,14 +98,20 @@ module Make (Conf : Service.CONF) = struct
       try%lwt Service.request ~meth:`POST ~uri:"/" ~headers ~payload () with
       | Common.Error
           { code = 400
-          ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException" } ->
-          Lwt.fail ResourceInUseException
+          ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException"
+          ; message } ->
+          Lwt.fail @@ ResourceInUseException message
       | Common.Error
           { code = 400
           ; typ =
               "com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException"
-          } ->
-          Lwt.fail ConditionalCheckFailedException
+          ; message } ->
+          Lwt.fail @@ ConditionalCheckFailedException message
+      | Common.Error
+          { code = 400
+          ; typ = "com.amazon.coral.validate#ValidationException"
+          ; message } ->
+          Lwt.fail @@ ValidationException message
       | exn ->
           prerr_endline @@ __LOC__ ^ ": error during request:";
           prerr_endline payload;
