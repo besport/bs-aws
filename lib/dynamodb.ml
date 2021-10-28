@@ -378,7 +378,6 @@ module Make (Conf : Service.CONF) = struct
          ; billing_mode = "PAY_PER_REQUEST" }
     in
     let%lwt response = perform ~action:"CreateTable" ~payload in
-    print_endline @@ Yojson.Safe.to_string response;
     Aux.parse_response ~__LOC__ TableDescription.t_of_yojson response
 
   module DeleteItem = struct
