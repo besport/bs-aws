@@ -8,6 +8,7 @@ module Make (Conf : Service.CONF) = struct
   exception Encoding_error of string
   exception Decoding_error of string
   exception ResourceInUseException of string
+  exception ResourceNotFoundException of string
   exception ConditionalCheckFailedException of string
   exception ValidationException of string
 
@@ -105,6 +106,11 @@ module Make (Conf : Service.CONF) = struct
           ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException"
           ; message } ->
           Lwt.fail @@ ResourceInUseException message
+      | Common.Error
+          { code = 400
+          ; typ = "com.amazonaws.dynamodb.v20120810#ResourceNotFoundException"
+          ; message } ->
+          Lwt.fail @@ ResourceNotFoundException message
       | Common.Error
           { code = 400
           ; typ =
