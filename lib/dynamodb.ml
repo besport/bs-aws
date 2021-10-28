@@ -114,7 +114,7 @@ module Make (Conf : Service.CONF) = struct
           Lwt.fail @@ ValidationException message
       | exn ->
           prerr_endline @@ __LOC__ ^ ": error during request:";
-          prerr_endline payload;
+          prerr_endline @@ action ^ " " ^ payload;
           Lwt.fail exn
     in
     try Lwt.return @@ Yojson.Safe.from_string response_body
