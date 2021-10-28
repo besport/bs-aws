@@ -150,8 +150,7 @@ module Make (Conf : Service.CONF) = struct
       `Assoc (List.map (fun (name, value) -> name, `String value) l)
 
     type request =
-      { attributes_to_get : string list option [@option] [@key "AttributesToGet"]
-      ; consistent_read : bool option [@option] [@key "ConsistentRead"]
+      { consistent_read : bool option [@option] [@key "ConsistentRead"]
       ; expression_attribute_names : expression_attribute_names option
             [@key "ExpressionAttributeNames"] [@option]
       ; key : attribute_values [@key "Key"]
@@ -173,12 +172,10 @@ module Make (Conf : Service.CONF) = struct
     let transform_response {consumed_capacity' = c; item' = i} =
       {consumed_capacity = c; item = Option.default [] i}
 
-    let request ?attributes_to_get ?consistent_read
-        ?(expression_attribute_names = []) ?projection_expression
-        ?return_consumed_capacity ~table key
+    let request ?consistent_read ?(expression_attribute_names = [])
+        ?projection_expression ?return_consumed_capacity ~table key
       =
-      { attributes_to_get
-      ; consistent_read
+      { consistent_read
       ; expression_attribute_names =
           (match expression_attribute_names with [] -> None | l -> Some l)
       ; key
@@ -188,13 +185,13 @@ module Make (Conf : Service.CONF) = struct
       [@@deriving yojson, show]
   end
 
-  let get_item ?attributes_to_get ?consistent_read ?projection_expression
-      ?return_consumed_capacity ~table key
+  let get_item ?consistent_read ?projection_expression ?return_consumed_capacity
+      ~table key
     =
     let open GetItem in
     let payload =
       Yojson.Safe.to_string @@ yojson_of_request
-      @@ request ?attributes_to_get ?consistent_read ?projection_expression
+      @@ request ?consistent_read ?projection_expression
            ?return_consumed_capacity ~table key
     in
     let%lwt response = perform ~action:"GetItem" ~payload in
