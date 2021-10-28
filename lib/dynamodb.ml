@@ -1,9 +1,12 @@
+module B64 = Base64
 open Batteries
 
 let todo = Obj.magic @@ fun () -> failwith "TODO"
 
 module Make (Conf : Service.CONF) = struct
   exception Parse_error
+  exception Encoding_error of string
+  exception Decoding_error of string
   exception ResourceInUseException
   exception ConditionalCheckFailedException
 
@@ -35,8 +38,18 @@ module Make (Conf : Service.CONF) = struct
 
   let yojson_of_yojson = identity
 
+  let encode_base64 str =
+    match B64.encode str with
+    | Ok b -> b
+    | Error (`Msg msg) -> raise @@ Encoding_error msg
+
+  let decode_base64 str =
+    match B64.decode str with
+    | Ok s -> s
+    | Error (`Msg msg) -> raise @@ Decoding_error msg
+
   type attribute_value =
-    | B of bytes
+    | B of string
     | BOOL of bool
     | BS of string list
     | L of attribute_value list
@@ -48,19 +61,23 @@ module Make (Conf : Service.CONF) = struct
     | SS of string list
   [@@deriving yojson, show]
 
-  let yojson_of_attribute_value =
-    let obj_of_list = function
-      | `List [`String x; y] -> `Assoc [x, y]
-      | _ -> raise Parse_error
-    in
-    obj_of_list % yojson_of_attribute_value
+  let yojson_of_attribute_value = function
+    | B str -> `Assoc ["B", `String (encode_base64 str)]
+    | a ->
+        let obj_of_list = function
+          | `List [`String x; y] -> `Assoc [x, y]
+          | _ -> raise Parse_error
+        in
+        obj_of_list @@ yojson_of_attribute_value a
 
-  let attribute_value_of_yojson =
-    let list_of_obj = function
-      | `Assoc [(x, y)] -> `List [`String x; y]
-      | _ -> raise Parse_error
-    in
-    attribute_value_of_yojson % list_of_obj
+  let attribute_value_of_yojson = function
+    | `Assoc [("B", `String str)] -> B (decode_base64 str)
+    | a ->
+        let list_of_obj = function
+          | `Assoc [(x, y)] -> `List [`String x; y]
+          | _ -> raise Parse_error
+        in
+        attribute_value_of_yojson @@ list_of_obj a
 
   type attribute_values = (string * attribute_value) list [@@deriving show]
 
