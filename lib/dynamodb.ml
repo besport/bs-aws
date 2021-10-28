@@ -95,6 +95,10 @@ module Make (Conf : Service.CONF) = struct
       ; "content-type", "application/x-amz-json-1.0" ]
     in
     let%lwt response_body, _ =
+      let prerr_context () =
+        prerr_endline @@ __LOC__ ^ ": error during request:";
+        prerr_endline @@ action ^ " " ^ payload
+      in
       try%lwt Service.request ~meth:`POST ~uri:"/" ~headers ~payload () with
       | Common.Error
           { code = 400
@@ -111,11 +115,9 @@ module Make (Conf : Service.CONF) = struct
           { code = 400
           ; typ = "com.amazon.coral.validate#ValidationException"
           ; message } ->
+          prerr_context ();
           Lwt.fail @@ ValidationException message
-      | exn ->
-          prerr_endline @@ __LOC__ ^ ": error during request:";
-          prerr_endline @@ action ^ " " ^ payload;
-          Lwt.fail exn
+      | exn -> prerr_context (); Lwt.fail exn
     in
     try Lwt.return @@ Yojson.Safe.from_string response_body
     with exn ->
