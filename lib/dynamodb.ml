@@ -65,6 +65,7 @@ module Make (Conf : Service.CONF) = struct
 
   let yojson_of_attribute_value = function
     | B str -> `Assoc ["B", `String (encode_base64 str)]
+    | N f -> `Assoc ["N", `String (string_of_float f)]
     | a ->
         let obj_of_list = function
           | `List [`String x; y] -> `Assoc [x, y]
@@ -74,6 +75,7 @@ module Make (Conf : Service.CONF) = struct
 
   let attribute_value_of_yojson = function
     | `Assoc [("B", `String str)] -> B (decode_base64 str)
+    | `Assoc [("N", `String str)] -> N (float_of_string str)
     | a ->
         let list_of_obj = function
           | `Assoc [(x, y)] -> `List [`String x; y]
