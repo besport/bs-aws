@@ -110,6 +110,7 @@ module Make (Conf : Service.CONF) = struct
           { code = 400
           ; typ = "com.amazonaws.dynamodb.v20120810#ResourceNotFoundException"
           ; message } ->
+          prerr_context ();
           Lwt.fail @@ ResourceNotFound message
       | Common.Error
           { code = 400
