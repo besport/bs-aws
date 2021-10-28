@@ -7,9 +7,9 @@ module Make (Conf : Service.CONF) = struct
   exception Parse_error
   exception Encoding_error of string
   exception Decoding_error of string
-  exception ResourceInUseException of string
-  exception ResourceNotFoundException of string
-  exception ConditionalCheckFailedException of string
+  exception ResourceInUse of string
+  exception ResourceNotFound of string
+  exception ConditionalCheckFailed of string
   exception ValidationException of string
 
   let hostname region =
@@ -105,18 +105,18 @@ module Make (Conf : Service.CONF) = struct
           { code = 400
           ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException"
           ; message } ->
-          Lwt.fail @@ ResourceInUseException message
+          Lwt.fail @@ ResourceInUse message
       | Common.Error
           { code = 400
           ; typ = "com.amazonaws.dynamodb.v20120810#ResourceNotFoundException"
           ; message } ->
-          Lwt.fail @@ ResourceNotFoundException message
+          Lwt.fail @@ ResourceNotFound message
       | Common.Error
           { code = 400
           ; typ =
               "com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException"
           ; message } ->
-          Lwt.fail @@ ConditionalCheckFailedException message
+          Lwt.fail @@ ConditionalCheckFailed message
       | Common.Error
           { code = 400
           ; typ = "com.amazon.coral.validate#ValidationException"
