@@ -277,8 +277,14 @@ module Make (Conf : Service.CONF) = struct
       Yojson.Safe.to_string @@ yojson_of_request
       @@ {item = items; table_name = table; condition_expression; return_values}
     in
-    let%lwt response = perform ~action:"PutItem" ~payload in
-    Aux.parse_response ~__LOC__ response_of_yojson response
+    try%lwt
+      let%lwt response = perform ~action:"PutItem" ~payload in
+      Aux.parse_response ~__LOC__ response_of_yojson response
+    with ConditionalCheckFailed _ ->
+      Lwt.return
+        { attributes = None
+        ; consumed_capacity = None
+        ; item_collection_metrics = None }
 
   module TableDescription = struct
     type t =
