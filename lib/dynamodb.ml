@@ -409,20 +409,17 @@ module Make (Conf : Service.CONF) = struct
     perform ~action:"DeleteItem" ~payload
 
   module BatchWriteItem = struct
-    type delete_request = {key : attribute_value} [@@deriving yojson_of]
-    type put_request = attribute_values list [@@deriving yojson_of]
-
-    let yojson_of_put_request l =
-      let item i = "Item", yojson_of_attribute_values i in
-      `Assoc (List.map item l)
+    type delete_request = {key : attribute_value [@key "Key"]}
+    [@@deriving yojson_of]
 
     type write_request =
       | DeleteRequest of delete_request
-      | PutRequest of put_request
+      | PutRequest of attribute_values
 
     let yojson_of_write_request = function
       | DeleteRequest r -> `Assoc ["DeleteRequest", yojson_of_delete_request r]
-      | PutRequest r -> `Assoc ["PutRequest", yojson_of_put_request r]
+      | PutRequest r ->
+          `Assoc ["PutRequest", `Assoc ["Item", yojson_of_attribute_values r]]
 
     type request_items = (string * write_request list) list
 
