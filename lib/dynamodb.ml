@@ -3,6 +3,10 @@ open Batteries
 
 let todo = Obj.magic @@ fun () -> failwith "TODO"
 
+type yojson = Yojson.Safe.t [@@deriving show]
+
+let yojson_of_yojson = identity
+
 module Make (Conf : Service.CONF) = struct
   exception Parse_error
   exception Encoding_error of string
@@ -35,10 +39,6 @@ module Make (Conf : Service.CONF) = struct
         prerr_endline @@ Yojson.Safe.to_string response;
         Lwt.fail exn
   end
-
-  type yojson = Yojson.Safe.t [@@deriving show]
-
-  let yojson_of_yojson = identity
 
   let encode_base64 str =
     match B64.encode str with
@@ -407,4 +407,45 @@ module Make (Conf : Service.CONF) = struct
       @@ {DeleteItem.key = items; table_name = table}
     in
     perform ~action:"DeleteItem" ~payload
+
+  module BatchWriteItem = struct
+    type delete_request = {key : attribute_value} [@@deriving yojson_of]
+    type put_request = attribute_values list [@@deriving yojson_of]
+
+    let yojson_of_put_request l =
+      let item i = "Item", yojson_of_attribute_values i in
+      `Assoc (List.map item l)
+
+    type write_request =
+      | DeleteRequest of delete_request
+      | PutRequest of put_request
+
+    let yojson_of_write_request = function
+      | DeleteRequest r -> "DeleteRequest", yojson_of_delete_request r
+      | PutRequest r -> "PutRequest", yojson_of_put_request r
+
+    type request_items = (string * write_request list) list
+
+    let yojson_of_request_items request_items =
+      let request_item (table, requests) =
+        table, `Assoc (List.map yojson_of_write_request requests)
+      in
+      `Assoc (List.map request_item request_items)
+
+    type request =
+      { request_items : request_items [@key "RequestItems"]
+      ; consumed_capacity : yojson option [@option] [@key "consumedCapacity"]
+      ; item_collection_metrics : yojson option }
+    [@@deriving yojson_of]
+  end
+
+  let batch_write_item request_items =
+    let payload =
+      Yojson.Safe.to_string
+      @@ BatchWriteItem.yojson_of_request
+           { request_items
+           ; consumed_capacity = None
+           ; item_collection_metrics = None }
+    in
+    perform ~action:"BatchWriteItem" ~payload
 end
