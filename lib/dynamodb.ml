@@ -421,14 +421,14 @@ module Make (Conf : Service.CONF) = struct
       | PutRequest of put_request
 
     let yojson_of_write_request = function
-      | DeleteRequest r -> "DeleteRequest", yojson_of_delete_request r
-      | PutRequest r -> "PutRequest", yojson_of_put_request r
+      | DeleteRequest r -> `Assoc ["DeleteRequest", yojson_of_delete_request r]
+      | PutRequest r -> `Assoc ["PutRequest", yojson_of_put_request r]
 
     type request_items = (string * write_request list) list
 
     let yojson_of_request_items request_items =
       let request_item (table, requests) =
-        table, `Assoc (List.map yojson_of_write_request requests)
+        table, `List (List.map yojson_of_write_request requests)
       in
       `Assoc (List.map request_item request_items)
 
