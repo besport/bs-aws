@@ -445,4 +445,65 @@ module Make (Conf : Service.CONF) = struct
            ; item_collection_metrics = None }
     in
     perform ~action:"BatchWriteItem" ~payload
+
+  module Query = struct
+    type exclusive_start_key = string * attribute_value [@@deriving show]
+
+    let yojson_of_exclusive_start_key (key, value) =
+      `Assoc [key, yojson_of_attribute_value value]
+
+    type request =
+      { consistent_read : bool option [@option] [@key "ConsistentRead"]
+      ; exclusive_start_key : exclusive_start_key option
+            [@option] [@key "ExclusiveStartKey"]
+      ; expression_attribute_names : Aux.expression_attribute_names option
+            [@option] [@key "ExpressionAttributeNames"]
+      ; expression_attribute_values : attribute_values option
+            [@option] [@key "ExpressionAttributeValues"]
+      ; filter_expression : string option [@option] [@key "FilterExpression"]
+      ; index_name : string option [@option] [@key "IndexName"]
+      ; key_condition_expression : string [@key "KeyConditionExpression"]
+      ; limit : int option [@option] [@key "Limit"]
+      ; projection_expression : string option
+            [@option] [@key "ProjectionExpression"]
+      ; return_consumed_capacity : string option
+            [@option] [@key "ReturnConsumedCapacity"]
+      ; scan_index_forward : bool option [@option] [@key "ScanIndexForward"]
+      ; select : string option [@option] [@key "Select"]
+      ; table_name : string [@key "TableName"] }
+    [@@deriving yojson_of, show]
+
+    type response =
+      { count : int [@key "Count"]
+      ; items : attribute_values [@key "Items"]
+      ; last_evaluated_key : attribute_value option
+            [@option] [@key "LastEvaluatedKey"]
+      ; scanned_count : int [@key "ScannedCount"] }
+    [@@deriving of_yojson, show]
+  end
+
+  let query ?consistent_read ?exclusive_start_key ?expression_attribute_names
+      ?expression_attribute_values ?filter_expression ?index_name
+      ~key_condition_expression ?limit ?projection_expression
+      ?return_consumed_capacity ?scan_index_forward ?select ~table ()
+    =
+    let open Query in
+    let request =
+      { consistent_read
+      ; exclusive_start_key
+      ; expression_attribute_names
+      ; expression_attribute_values
+      ; filter_expression
+      ; index_name
+      ; key_condition_expression
+      ; limit
+      ; projection_expression
+      ; return_consumed_capacity
+      ; scan_index_forward
+      ; select
+      ; table_name = table }
+    in
+    let payload = Yojson.Safe.to_string @@ yojson_of_request request in
+    let%lwt response = perform ~action:"Query" ~payload in
+    Aux.parse_response ~__LOC__ response_of_yojson response
 end
