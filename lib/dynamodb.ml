@@ -34,10 +34,99 @@ module Make (Conf : Service.CONF) = struct
 
     let parse_response ~__LOC__:loc p response =
       try Lwt.return @@ p response
-      with Ppx_yojson_conv_lib.Yojson_conv.Of_yojson_error _ as exn ->
+      with
+      | (Ppx_yojson_conv_lib.Yojson_conv.Of_yojson_error _ | Parse_error) as exn
+      ->
         prerr_endline @@ loc ^ ": failed to parse response: ";
         prerr_endline @@ Yojson.Safe.to_string response;
         Lwt.fail exn
+
+    let encode_base64 str =
+      match B64.encode str with
+      | Ok b -> b
+      | Error (`Msg msg) -> raise @@ Encoding_error msg
+
+    let decode_base64 str =
+      match B64.decode str with
+      | Ok s -> s
+      | Error (`Msg msg) -> raise @@ Decoding_error msg
+
+    let perform ~action ~payload =
+      let headers =
+        [ "x-amz-target", "DynamoDB_20120810." ^ action
+        ; "content-type", "application/x-amz-json-1.0" ]
+      in
+      let%lwt response_body, _ =
+        let prerr_context () =
+          prerr_endline @@ __LOC__ ^ ": error during request:";
+          prerr_endline @@ action ^ " " ^ payload
+        in
+        try%lwt Service.request ~meth:`POST ~uri:"/" ~headers ~payload () with
+        | Common.Error
+            { code = 400
+            ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException"
+            ; message } ->
+            Lwt.fail @@ ResourceInUse message
+        | Common.Error
+            { code = 400
+            ; typ = "com.amazonaws.dynamodb.v20120810#ResourceNotFoundException"
+            ; message } ->
+            prerr_context ();
+            Lwt.fail @@ ResourceNotFound message
+        | Common.Error
+            { code = 400
+            ; typ =
+                "com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException"
+            ; message } ->
+            Lwt.fail @@ ConditionalCheckFailed message
+        | Common.Error
+            { code = 400
+            ; typ = "com.amazon.coral.validate#ValidationException"
+            ; message } ->
+            prerr_context ();
+            Lwt.fail @@ ValidationException message
+        | exn -> prerr_context (); Lwt.fail exn
+      in
+      try Lwt.return @@ Yojson.Safe.from_string response_body
+      with exn ->
+        prerr_endline @@ __LOC__ ^ ": error while parsing JSON:";
+        prerr_endline response_body;
+        Lwt.fail exn
+  end
+
+  module Types = struct
+    type attribute_value =
+      | B of string
+      | BOOL of bool
+      | BS of string list
+      | L of attribute_value list
+      (* | M of TODO *)
+      | N of float
+      | NS of float list
+      | NULL
+      | S of string
+      | SS of string list
+    [@@deriving yojson, show]
+
+    let yojson_of_attribute_value = function
+      | B str -> `Assoc ["B", `String (Aux.encode_base64 str)]
+      | N f -> `Assoc ["N", `String (string_of_float f)]
+      | a ->
+          let obj_of_list = function
+            | `List [`String x; y] -> `Assoc [x, y]
+            | _ -> raise Parse_error
+          in
+          obj_of_list @@ yojson_of_attribute_value a
+
+    let attribute_value_of_yojson = function
+      | `Assoc [("B", `String str)] -> B (Aux.decode_base64 str)
+      | `Assoc [("N", `String str)] -> N (float_of_string str)
+      | a ->
+          let list_of_obj = function
+            | `Assoc [(x, y)] -> `List [`String x; y]
+            | _ -> raise Parse_error
+          in
+          attribute_value_of_yojson @@ list_of_obj a
 
     type expression_attribute_names = (string * string) list [@@deriving show]
 
@@ -52,106 +141,28 @@ module Make (Conf : Service.CONF) = struct
 
     let yojson_of_expression_attribute_names l =
       `Assoc (List.map (fun (name, value) -> name, `String value) l)
+
+    type exclusive_start_key = string * attribute_value [@@deriving show]
+
+    let yojson_of_exclusive_start_key (key, value) =
+      `Assoc [key, yojson_of_attribute_value value]
+
+    type attribute_values = (string * attribute_value) list [@@deriving show]
+
+    let yojson_of_attribute_values l =
+      `Assoc (List.map (Tuple2.map2 yojson_of_attribute_value) l)
+
+    let attribute_values_of_yojson = function
+      | `Assoc l -> List.map (Tuple2.map2 attribute_value_of_yojson) l
+      | _ -> raise Parse_error
   end
 
-  let encode_base64 str =
-    match B64.encode str with
-    | Ok b -> b
-    | Error (`Msg msg) -> raise @@ Encoding_error msg
-
-  let decode_base64 str =
-    match B64.decode str with
-    | Ok s -> s
-    | Error (`Msg msg) -> raise @@ Decoding_error msg
-
-  type attribute_value =
-    | B of string
-    | BOOL of bool
-    | BS of string list
-    | L of attribute_value list
-    (* | M of TODO *)
-    | N of float
-    | NS of float list
-    | NULL
-    | S of string
-    | SS of string list
-  [@@deriving yojson, show]
-
-  let yojson_of_attribute_value = function
-    | B str -> `Assoc ["B", `String (encode_base64 str)]
-    | N f -> `Assoc ["N", `String (string_of_float f)]
-    | a ->
-        let obj_of_list = function
-          | `List [`String x; y] -> `Assoc [x, y]
-          | _ -> raise Parse_error
-        in
-        obj_of_list @@ yojson_of_attribute_value a
-
-  let attribute_value_of_yojson = function
-    | `Assoc [("B", `String str)] -> B (decode_base64 str)
-    | `Assoc [("N", `String str)] -> N (float_of_string str)
-    | a ->
-        let list_of_obj = function
-          | `Assoc [(x, y)] -> `List [`String x; y]
-          | _ -> raise Parse_error
-        in
-        attribute_value_of_yojson @@ list_of_obj a
-
-  type attribute_values = (string * attribute_value) list [@@deriving show]
-
-  let yojson_of_attribute_values l =
-    `Assoc (List.map (Tuple2.map2 yojson_of_attribute_value) l)
-
-  let attribute_values_of_yojson = function
-    | `Assoc l -> List.map (Tuple2.map2 attribute_value_of_yojson) l
-    | _ -> raise Not_found
-
-  let perform ~action ~payload =
-    let headers =
-      [ "x-amz-target", "DynamoDB_20120810." ^ action
-      ; "content-type", "application/x-amz-json-1.0" ]
-    in
-    let%lwt response_body, _ =
-      let prerr_context () =
-        prerr_endline @@ __LOC__ ^ ": error during request:";
-        prerr_endline @@ action ^ " " ^ payload
-      in
-      try%lwt Service.request ~meth:`POST ~uri:"/" ~headers ~payload () with
-      | Common.Error
-          { code = 400
-          ; typ = "com.amazonaws.dynamodb.v20120810#ResourceInUseException"
-          ; message } ->
-          Lwt.fail @@ ResourceInUse message
-      | Common.Error
-          { code = 400
-          ; typ = "com.amazonaws.dynamodb.v20120810#ResourceNotFoundException"
-          ; message } ->
-          prerr_context ();
-          Lwt.fail @@ ResourceNotFound message
-      | Common.Error
-          { code = 400
-          ; typ =
-              "com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException"
-          ; message } ->
-          Lwt.fail @@ ConditionalCheckFailed message
-      | Common.Error
-          { code = 400
-          ; typ = "com.amazon.coral.validate#ValidationException"
-          ; message } ->
-          prerr_context ();
-          Lwt.fail @@ ValidationException message
-      | exn -> prerr_context (); Lwt.fail exn
-    in
-    try Lwt.return @@ Yojson.Safe.from_string response_body
-    with exn ->
-      prerr_endline @@ __LOC__ ^ ": error while parsing JSON:";
-      prerr_endline response_body;
-      Lwt.fail exn
+  include Types
 
   module GetItem = struct
     type request =
       { consistent_read : bool option [@option] [@key "ConsistentRead"]
-      ; expression_attribute_names : Aux.expression_attribute_names option
+      ; expression_attribute_names : Types.expression_attribute_names option
             [@key "ExpressionAttributeNames"] [@option]
       ; key : attribute_values [@key "Key"]
       ; projection_expression : string option
@@ -188,7 +199,7 @@ module Make (Conf : Service.CONF) = struct
       @@ request ?consistent_read ?projection_expression
            ?return_consumed_capacity ~table key
     in
-    let%lwt response = perform ~action:"GetItem" ~payload in
+    let%lwt response = Aux.perform ~action:"GetItem" ~payload in
     Aux.parse_response ~__LOC__ response_of_yojson response
 
   module ConditionExpression = struct
@@ -278,7 +289,7 @@ module Make (Conf : Service.CONF) = struct
       @@ {item = items; table_name = table; condition_expression; return_values}
     in
     try%lwt
-      let%lwt response = perform ~action:"PutItem" ~payload in
+      let%lwt response = Aux.perform ~action:"PutItem" ~payload in
       Aux.parse_response ~__LOC__ response_of_yojson response
     with ConditionalCheckFailed _ ->
       Lwt.return
@@ -328,7 +339,7 @@ module Make (Conf : Service.CONF) = struct
     let open DescribeTable in
     let body = ["TableName", `String table] in
     let payload = Yojson.Safe.to_string (`Assoc body) in
-    let%lwt response = perform ~action:"DescribeTable" ~payload in
+    let%lwt response = Aux.perform ~action:"DescribeTable" ~payload in
     Aux.parse_response ~__LOC__ response_of_yojson response
 
   module AttributeDefinition = struct
@@ -391,7 +402,7 @@ module Make (Conf : Service.CONF) = struct
          ; table_name = table
          ; billing_mode = "PAY_PER_REQUEST" }
     in
-    let%lwt response = perform ~action:"CreateTable" ~payload in
+    let%lwt response = Aux.perform ~action:"CreateTable" ~payload in
     Aux.parse_response ~__LOC__ TableDescription.t_of_yojson response
 
   module DeleteItem = struct
@@ -406,10 +417,10 @@ module Make (Conf : Service.CONF) = struct
       Yojson.Safe.to_string @@ DeleteItem.yojson_of_request
       @@ {DeleteItem.key = items; table_name = table}
     in
-    perform ~action:"DeleteItem" ~payload
+    Aux.perform ~action:"DeleteItem" ~payload
 
   module BatchWriteItem = struct
-    type delete_request = {key : attribute_value [@key "Key"]}
+    type delete_request = {key : Types.attribute_value [@key "Key"]}
     [@@deriving yojson_of]
 
     type write_request =
@@ -444,19 +455,14 @@ module Make (Conf : Service.CONF) = struct
            ; consumed_capacity = None
            ; item_collection_metrics = None }
     in
-    perform ~action:"BatchWriteItem" ~payload
+    Aux.perform ~action:"BatchWriteItem" ~payload
 
   module Query = struct
-    type exclusive_start_key = string * attribute_value [@@deriving show]
-
-    let yojson_of_exclusive_start_key (key, value) =
-      `Assoc [key, yojson_of_attribute_value value]
-
     type request =
       { consistent_read : bool option [@option] [@key "ConsistentRead"]
-      ; exclusive_start_key : exclusive_start_key option
+      ; exclusive_start_key : Types.exclusive_start_key option
             [@option] [@key "ExclusiveStartKey"]
-      ; expression_attribute_names : Aux.expression_attribute_names option
+      ; expression_attribute_names : Types.expression_attribute_names option
             [@option] [@key "ExpressionAttributeNames"]
       ; expression_attribute_values : attribute_values option
             [@option] [@key "ExpressionAttributeValues"]
@@ -475,8 +481,8 @@ module Make (Conf : Service.CONF) = struct
 
     type response =
       { count : int [@key "Count"]
-      ; items : attribute_values [@key "Items"]
-      ; last_evaluated_key : attribute_value option
+      ; items : attribute_values list [@key "Items"]
+      ; last_evaluated_key : Types.attribute_value option
             [@option] [@key "LastEvaluatedKey"]
       ; scanned_count : int [@key "ScannedCount"] }
     [@@deriving of_yojson, show]
@@ -504,6 +510,62 @@ module Make (Conf : Service.CONF) = struct
       ; table_name = table }
     in
     let payload = Yojson.Safe.to_string @@ yojson_of_request request in
-    let%lwt response = perform ~action:"Query" ~payload in
+    let%lwt response = Aux.perform ~action:"Query" ~payload in
+    Aux.parse_response ~__LOC__ response_of_yojson response
+
+  module Scan = struct
+    type request =
+      { consistent_read : bool option [@option] [@key "ConsistentRead"]
+      ; exclusive_start_key : Types.exclusive_start_key option
+            [@option] [@key "ExclusiveStartKey"]
+      ; expression_attribute_names : Types.expression_attribute_names option
+            [@option] [@key "ExpressionAttributeNames"]
+      ; expression_attribute_values : attribute_values option
+            [@option] [@key "ExpressionAttributeValues"]
+      ; filter_expression : string option [@option] [@key "FilterExpression"]
+      ; index_name : string option [@option] [@key "IndexName"]
+      ; limit : int option [@option] [@key "Limit"]
+      ; projection_expression : string option
+            [@option] [@key "ProjectionExpression"]
+      ; return_consumed_capacity : string option
+            [@option] [@key "ReturnConsumedCapacity"]
+      ; segment : int option [@option] [@key "Segment"]
+      ; select : string option [@option] [@key "Select"]
+      ; table_name : string [@key "TableName"]
+      ; total_segments : int option [@option] [@key "TotalSegments"] }
+    [@@deriving yojson_of, show]
+
+    type response =
+      { count : int [@key "Count"]
+      ; items : attribute_values list [@key "Items"]
+      ; last_evaluated_key : Types.attribute_value option
+            [@option] [@key "LastEvaluatedKey"]
+      ; scanned_count : int [@key "ScannedCount"] }
+    [@@deriving of_yojson, show]
+  end
+
+  let scan ?consistent_read ?exclusive_start_key ?expression_attribute_names
+      ?expression_attribute_values ?filter_expression ?index_name ?limit
+      ?projection_expression ?return_consumed_capacity ?segment ?select
+      ?total_segments ~table ()
+    =
+    let open Scan in
+    let request =
+      { consistent_read
+      ; exclusive_start_key
+      ; expression_attribute_names
+      ; expression_attribute_values
+      ; filter_expression
+      ; index_name
+      ; limit
+      ; projection_expression
+      ; return_consumed_capacity
+      ; segment
+      ; select
+      ; total_segments
+      ; table_name = table }
+    in
+    let payload = Yojson.Safe.to_string @@ yojson_of_request request in
+    let%lwt response = Aux.perform ~action:"Scan" ~payload in
     Aux.parse_response ~__LOC__ response_of_yojson response
 end
