@@ -38,6 +38,20 @@ module Make (Conf : Service.CONF) = struct
         prerr_endline @@ loc ^ ": failed to parse response: ";
         prerr_endline @@ Yojson.Safe.to_string response;
         Lwt.fail exn
+
+    type expression_attribute_names = (string * string) list [@@deriving show]
+
+    let expression_attribute_names_of_yojson = function
+      | `Assoc l ->
+          let expression_attribute_name_of_yojson = function
+            | name, `String value -> name, value
+            | _ -> raise Parse_error
+          in
+          List.map expression_attribute_name_of_yojson l
+      | _ -> raise Parse_error
+
+    let yojson_of_expression_attribute_names l =
+      `Assoc (List.map (fun (name, value) -> name, `String value) l)
   end
 
   let encode_base64 str =
@@ -135,23 +149,9 @@ module Make (Conf : Service.CONF) = struct
       Lwt.fail exn
 
   module GetItem = struct
-    type expression_attribute_names = (string * string) list [@@deriving show]
-
-    let expression_attribute_names_of_yojson = function
-      | `Assoc l ->
-          let expression_attribute_name_of_yojson = function
-            | name, `String value -> name, value
-            | _ -> raise Parse_error
-          in
-          List.map expression_attribute_name_of_yojson l
-      | _ -> raise Parse_error
-
-    let yojson_of_expression_attribute_names l =
-      `Assoc (List.map (fun (name, value) -> name, `String value) l)
-
     type request =
       { consistent_read : bool option [@option] [@key "ConsistentRead"]
-      ; expression_attribute_names : expression_attribute_names option
+      ; expression_attribute_names : Aux.expression_attribute_names option
             [@key "ExpressionAttributeNames"] [@option]
       ; key : attribute_values [@key "Key"]
       ; projection_expression : string option
